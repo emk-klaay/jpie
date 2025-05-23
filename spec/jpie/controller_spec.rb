@@ -240,7 +240,7 @@ RSpec.describe JPie::Controller do
   describe 'parameter deserialization' do
     it 'deserializes valid JSON' do
       mock_body = double('body')
-      allow(mock_body).to receive(:read).and_return('{"data": {"type": "test_models", "attributes": {"name": "test"}}}')
+      allow(mock_body).to receive(:read).and_return('{"data": {"type": "test-models", "attributes": {"name": "test"}}}')
       
       mock_request = double('request', body: mock_body)
       controller.request = mock_request

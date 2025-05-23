@@ -178,7 +178,7 @@ RSpec.describe JPie::Serializer do
       )
       
       result = serializer.serialize(user_with_complex_data)
-      expect(result[:data][:attributes][:'created-at']).to eq('2024-01-01T12:00:00Z')
+      expect(result[:data][:attributes]['created-at']).to eq('2024-01-01T12:00:00Z')
     end
   end
 end

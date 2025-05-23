@@ -48,9 +48,9 @@ RSpec.describe JPie::Resource do
         # No explicit model set
       end
 
-      # The actual implementation will try to constantize 'Test' which doesn't exist
-      # so it should return nil, but we can test the behavior
-      expect(TestResource.model).to be_nil
+      # The implementation will try to constantize 'Test' from 'TestResource'
+      # Since TestModel exists (defined in controller_spec.rb), it should be found
+      expect(TestResource.model).to eq(TestModel)
     end
 
     it 'returns nil when model cannot be inferred' do

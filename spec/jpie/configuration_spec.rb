@@ -65,6 +65,10 @@ RSpec.describe JPie do
     end
 
     it 'allows setting configuration options' do
+      original_format = JPie.configuration.json_key_format
+      original_page_size = JPie.configuration.default_page_size
+      original_max_size = JPie.configuration.maximum_page_size
+
       JPie.configure do |config|
         config.json_key_format = :underscored
         config.default_page_size = 25
@@ -74,6 +78,13 @@ RSpec.describe JPie do
       expect(JPie.configuration.json_key_format).to eq(:underscored)
       expect(JPie.configuration.default_page_size).to eq(25)
       expect(JPie.configuration.maximum_page_size).to eq(200)
+
+      # Reset to original values
+      JPie.configure do |config|
+        config.json_key_format = original_format
+        config.default_page_size = original_page_size
+        config.maximum_page_size = original_max_size
+      end
     end
   end
 
