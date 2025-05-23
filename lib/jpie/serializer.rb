@@ -88,8 +88,13 @@ module JPie
 
     def collect_included_data(resources, includes, context)
       included = []
+      processed_includes = {}
 
-      includes.each do |include_name|
+      # Parse nested includes - convert "user.comments" to structured format
+      parsed_includes = parse_nested_includes(includes)
+
+      # Process each top-level include
+      parsed_includes.each do |include_name, nested_includes|
         include_sym = include_name.to_sym
         relationship_options = resource_class._relationships[include_sym]
 
@@ -105,12 +110,48 @@ module JPie
           related_objects = Array(related_objects)
           related_objects.each do |related_object|
             related_resource = related_resource_class.new(related_object, context)
-            included << serialize_resource_data(related_resource)
+            resource_data = serialize_resource_data(related_resource)
+            
+            # Use a unique key to avoid duplicates
+            key = [resource_data[:type], resource_data[:id]]
+            next if processed_includes[key]
+            
+            processed_includes[key] = true
+            included << resource_data
+
+            # Process nested includes recursively
+            if nested_includes.any?
+              nested_serializer = JPie::Serializer.new(related_resource_class)
+              nested_included = nested_serializer.send(:collect_included_data, [related_resource], nested_includes, context)
+              
+              nested_included.each do |nested_item|
+                nested_key = [nested_item[:type], nested_item[:id]]
+                next if processed_includes[nested_key]
+                
+                processed_includes[nested_key] = true
+                included << nested_item
+              end
+            end
           end
         end
       end
 
-      included.uniq { |item| [item[:type], item[:id]] }
+      included
+    end
+
+    def parse_nested_includes(includes)
+      result = {}
+      
+      includes.each do |include_path|
+        parts = include_path.split('.')
+        top_level = parts.first
+        nested_path = parts[1..-1].join('.') if parts.length > 1
+        
+        result[top_level] ||= []
+        result[top_level] << nested_path if nested_path && !nested_path.empty?
+      end
+      
+      result
     end
   end
 end

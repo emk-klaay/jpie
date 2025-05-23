@@ -154,7 +154,7 @@ module JPie
     end
 
     def parse_include_params
-      params[:include]&.split(',') || []
+      params[:include]&.split(',')&.map(&:strip) || []
     end
 
     private
