@@ -9,7 +9,7 @@ RSpec.describe JPie::Errors do
     end
 
     describe '#initialize' do
-      it 'sets values correctly' do
+      it 'sets values correctly', :aggregate_failures do
         expect(error.status).to eq(500)
         expect(error.code).to be_nil
         expect(error.title).to eq('Test Error')
@@ -19,7 +19,7 @@ RSpec.describe JPie::Errors do
     end
 
     describe '#to_hash' do
-      it 'returns a hash representation' do
+      it 'returns a hash representation', :aggregate_failures do
         hash = error.to_hash
         expect(hash).to include(
           status: '500',
@@ -30,7 +30,7 @@ RSpec.describe JPie::Errors do
         expect(hash).not_to have_key(:code)
       end
 
-      it 'excludes nil values' do
+      it 'excludes nil values', :aggregate_failures do
         minimal_error = described_class.new(status: 500, title: 'Minimal')
         hash = minimal_error.to_hash
         expect(hash).not_to have_key(:detail)
@@ -51,7 +51,7 @@ RSpec.describe JPie::Errors do
       expect(error.title).to eq('Bad Request')
     end
 
-    it 'includes detail in hash' do
+    it 'includes detail in hash', :aggregate_failures do
       hash = error.to_hash
       expect(hash[:status]).to eq('400')
       expect(hash[:detail]).to eq('Invalid request')

@@ -32,19 +32,19 @@ RSpec.describe JPie::Deserializer do
 
       let(:result) { deserializer.deserialize(json_data) }
 
-      it 'returns a hash with the correct attributes' do
+      it 'returns a hash with the correct attributes', :aggregate_failures do
         expect(result).to be_a(ActiveSupport::HashWithIndifferentAccess)
         expect(result['name']).to eq('John Doe')
         expect(result['email']).to eq('john@example.com')
         expect(result['id']).to eq('1')
       end
 
-      it 'parses datetime strings' do
+      it 'parses datetime strings', :aggregate_failures do
         expect(result['created_at']).to be_a(Time)
         expect(result['created_at']).to eq(Time.parse('2024-01-01T12:00:00Z'))
       end
 
-      it 'converts dasherized keys to underscored' do
+      it 'converts dasherized keys to underscored', :aggregate_failures do
         expect(result).to have_key('created_at')
         expect(result).not_to have_key('created-at')
       end
@@ -76,7 +76,7 @@ RSpec.describe JPie::Deserializer do
 
       let(:result) { deserializer.deserialize(json_data) }
 
-      it 'returns an array of attribute hashes' do
+      it 'returns an array of attribute hashes', :aggregate_failures do
         expect(result).to be_an(Array)
         expect(result.length).to eq(2)
 
@@ -170,7 +170,7 @@ RSpec.describe JPie::Deserializer do
         }
       end
 
-      it 'only includes attributes defined in the resource class' do
+      it 'only includes attributes defined in the resource class', :aggregate_failures do
         result = deserializer.deserialize(json_data)
         expect(result).to have_key('name')
         expect(result).to have_key('email')

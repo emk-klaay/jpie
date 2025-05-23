@@ -21,7 +21,7 @@ RSpec.describe JPie::Serializer do
   describe '#serialize with include parameter' do
     let(:serializer) { described_class.new(PostResource) }
 
-    it 'serializes without includes when no includes specified' do
+    it 'serializes without includes when no includes specified', :aggregate_failures do
       result = serializer.serialize(first_post)
 
       expect(result).to have_key(:data)
@@ -33,14 +33,14 @@ RSpec.describe JPie::Serializer do
     describe 'when user include is specified' do
       let(:result) { serializer.serialize(first_post, {}, includes: ['user']) }
 
-      it 'includes the data and included sections' do
+      it 'includes the data and included sections', :aggregate_failures do
         expect(result).to have_key(:data)
         expect(result).to have_key(:included)
         expect(result[:included]).to be_an(Array)
         expect(result[:included].length).to eq(1)
       end
 
-      it 'includes correct user data in included section' do
+      it 'includes correct user data in included section', :aggregate_failures do
         included_user = result[:included].first
         expect(included_user[:id]).to eq(user.id.to_s)
         expect(included_user[:type]).to eq('users')
@@ -51,14 +51,14 @@ RSpec.describe JPie::Serializer do
     describe 'with multiple posts' do
       let(:result) { serializer.serialize([first_post, second_post], {}, includes: ['user']) }
 
-      it 'includes data for all posts' do
+      it 'includes data for all posts', :aggregate_failures do
         expect(result).to have_key(:data)
         expect(result).to have_key(:included)
         expect(result[:data]).to be_an(Array)
         expect(result[:data].length).to eq(2)
       end
 
-      it 'deduplicates the same user in included section' do
+      it 'deduplicates the same user in included section', :aggregate_failures do
         # Should only include the user once even though both posts reference the same user
         expect(result[:included].length).to eq(1)
 
@@ -68,7 +68,7 @@ RSpec.describe JPie::Serializer do
       end
     end
 
-    it 'handles non-existent relationships gracefully' do
+    it 'handles non-existent relationships gracefully', :aggregate_failures do
       result = serializer.serialize(first_post, {}, includes: ['nonexistent'])
 
       expect(result).to have_key(:data)
@@ -195,7 +195,7 @@ RSpec.describe JPie::Serializer do
     end
 
     describe 'when include=user parameter is provided' do
-      it 'includes post data and related user data with correct content type' do
+      it 'includes post data and related user data with correct content type', :aggregate_failures do
         user = User.create!(name: 'John Doe', email: 'john@example.com')
         post = Post.create!(title: 'Test Post', content: 'Content', user: user)
 
@@ -224,7 +224,7 @@ RSpec.describe JPie::Serializer do
       end
     end
 
-    it 'renders post without included data when no include parameter is provided' do
+    it 'renders post without included data when no include parameter is provided', :aggregate_failures do
       # Set up data
       user = User.create!(name: 'John Doe', email: 'john@example.com')
       post = Post.create!(title: 'Test Post', content: 'Content', user: user)

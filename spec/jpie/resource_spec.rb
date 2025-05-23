@@ -59,7 +59,7 @@ RSpec.describe JPie::Resource do
   end
 
   describe '.attribute' do
-    it 'defines attribute methods' do
+    it 'defines attribute methods', :aggregate_failures do
       expect(resource_instance).to respond_to(:name)
       expect(resource_instance).to respond_to(:email)
     end
@@ -82,7 +82,7 @@ RSpec.describe JPie::Resource do
   end
 
   describe '#attributes_hash' do
-    it 'returns a hash of all attributes' do
+    it 'returns a hash of all attributes', :aggregate_failures do
       attributes = resource_instance.attributes_hash
 
       expect(attributes).to include(
@@ -95,7 +95,7 @@ RSpec.describe JPie::Resource do
   end
 
   describe 'attribute access' do
-    it 'returns the correct attribute values' do
+    it 'returns the correct attribute values', :aggregate_failures do
       expect(resource_instance.name).to eq('John Doe')
       expect(resource_instance.email).to eq('john@example.com')
     end
@@ -122,7 +122,7 @@ RSpec.describe JPie::Resource do
   end
 
   describe 'inheritance' do
-    it 'properly inherits attributes from parent class' do
+    it 'properly inherits attributes from parent class', :aggregate_failures do
       class BaseResource < JPie::Resource
         attributes :name
       end

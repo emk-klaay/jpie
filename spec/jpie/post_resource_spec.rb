@@ -32,7 +32,7 @@ RSpec.describe PostResource do
   end
 
   describe '#attributes_hash' do
-    it 'returns a hash of all attributes' do
+    it 'returns a hash of all attributes', :aggregate_failures do
       attributes = resource_instance.attributes_hash
 
       expect(attributes).to include(
@@ -46,7 +46,7 @@ RSpec.describe PostResource do
   end
 
   describe 'attribute access' do
-    it 'returns the correct attribute values' do
+    it 'returns the correct attribute values', :aggregate_failures do
       expect(resource_instance.title).to eq('Test Post')
       expect(resource_instance.content).to eq('This is a test post content')
       expect(resource_instance.user_id).to eq(user.id)

@@ -73,7 +73,7 @@ RSpec.describe 'PostsController' do
   end
 
   describe 'CRUD methods' do
-    it 'defines all CRUD methods' do
+    it 'defines all CRUD methods', :aggregate_failures do
       expect(controller).to respond_to(:index)
       expect(controller).to respond_to(:show)
       expect(controller).to respond_to(:create)

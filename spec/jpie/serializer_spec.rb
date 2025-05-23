@@ -24,12 +24,12 @@ RSpec.describe JPie::Serializer do
     context 'with a single object' do
       let(:result) { serializer.serialize(model_instance) }
 
-      it 'returns a JSON:API compliant structure' do
+      it 'returns a JSON:API compliant structure', :aggregate_failures do
         expect(result).to have_key(:data)
         expect(result[:data]).to be_a(Hash)
       end
 
-      it 'includes the correct id and type' do
+      it 'includes the correct id and type', :aggregate_failures do
         data = result[:data]
         expect(data[:id]).to eq(model_instance.id.to_s)
         expect(data[:type]).to eq('users')
@@ -52,13 +52,13 @@ RSpec.describe JPie::Serializer do
     context 'with a collection' do
       let(:result) { serializer.serialize(model_collection) }
 
-      it 'returns a JSON:API compliant collection structure' do
+      it 'returns a JSON:API compliant collection structure', :aggregate_failures do
         expect(result).to have_key(:data)
         expect(result[:data]).to be_an(Array)
         expect(result[:data].length).to eq(2)
       end
 
-      it 'includes correct data for each item' do
+      it 'includes correct data for each item', :aggregate_failures do
         first_item = result[:data].first
         second_item = result[:data].last
 

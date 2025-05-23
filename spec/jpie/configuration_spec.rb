@@ -5,7 +5,7 @@ require 'spec_helper'
 RSpec.describe JPie::Configuration do
   let(:config) { described_class.new }
 
-  it 'has default values' do
+  it 'has default values', :aggregate_failures do
     expect(config.default_page_size).to eq(20)
     expect(config.maximum_page_size).to eq(100)
   end
