@@ -49,3 +49,17 @@ class TaggingResource < JPie::Resource
   has_one :tag
   has_one :taggable
 end
+
+# STI Resource classes for testing
+class VehicleResource < JPie::Resource
+  attributes :name, :brand, :year
+  meta_attributes :created_at, :updated_at
+end
+
+class CarResource < VehicleResource
+  attributes :engine_size
+end
+
+class TruckResource < VehicleResource
+  attributes :cargo_capacity
+end

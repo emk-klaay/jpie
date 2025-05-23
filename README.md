@@ -447,6 +447,156 @@ end
 }
 ```
 
+### Single Table Inheritance (STI)
+
+JPie provides comprehensive support for Rails Single Table Inheritance (STI) models. STI allows multiple models to share a single database table with a "type" column to differentiate between them.
+
+#### STI Models
+
+```ruby
+# Base model
+class Vehicle < ActiveRecord::Base
+  validates :name, presence: true
+  validates :brand, presence: true
+  validates :year, presence: true
+end
+
+# STI subclasses
+class Car < Vehicle
+  validates :engine_size, presence: true
+end
+
+class Truck < Vehicle
+  validates :cargo_capacity, presence: true
+end
+```
+
+#### STI Resources
+
+JPie automatically handles STI type inference and resource inheritance:
+
+```ruby
+# Base resource
+class VehicleResource < JPie::Resource
+  attributes :name, :brand, :year
+  meta_attributes :created_at, :updated_at
+end
+
+# STI resources inherit from base resource
+class CarResource < VehicleResource
+  attributes :engine_size  # Car-specific attribute
+end
+
+class TruckResource < VehicleResource
+  attributes :cargo_capacity  # Truck-specific attribute
+end
+```
+
+#### STI Type Inference
+
+JPie automatically infers the correct JSON:API type from the STI model class:
+
+```ruby
+car = Car.create!(name: 'Civic', brand: 'Honda', year: 2020, engine_size: 1500)
+car_resource = CarResource.new(car)
+
+car_resource.type  # => "cars" (automatically inferred from Car model)
+```
+
+#### STI Serialization
+
+Each STI model serializes with its specific type and attributes:
+
+```ruby
+# Car serialization
+car_serializer = JPie::Serializer.new(CarResource)
+result = car_serializer.serialize(car)
+
+# Result:
+{
+  "data": {
+    "id": "1",
+    "type": "cars",  # STI type
+    "attributes": {
+      "name": "Civic",
+      "brand": "Honda", 
+      "year": 2020,
+      "engine_size": 1500  # Car-specific attribute
+    }
+  }
+}
+
+# Truck serialization  
+truck_serializer = JPie::Serializer.new(TruckResource)
+result = truck_serializer.serialize(truck)
+
+# Result:
+{
+  "data": {
+    "id": "2", 
+    "type": "trucks",  # STI type
+    "attributes": {
+      "name": "F-150",
+      "brand": "Ford",
+      "year": 2021,
+      "cargo_capacity": 1000  # Truck-specific attribute
+    }
+  }
+}
+```
+
+#### STI Controllers
+
+Controllers work seamlessly with STI models:
+
+```ruby
+class CarsController < ApplicationController
+  include JPie::Controller
+  # Automatically uses CarResource and Car model
+end
+
+class TrucksController < ApplicationController
+  include JPie::Controller  
+  # Automatically uses TruckResource and Truck model
+end
+
+class VehiclesController < ApplicationController
+  include JPie::Controller
+  # Uses VehicleResource and returns all vehicles (cars, trucks, etc.)
+end
+```
+
+#### STI Scoping
+
+Each STI resource automatically scopes to its specific type:
+
+```ruby
+CarResource.scope      # Returns only Car records
+TruckResource.scope    # Returns only Truck records  
+VehicleResource.scope  # Returns all Vehicle records (including STI subclasses)
+```
+
+#### STI in Polymorphic Relationships
+
+JPie's serializer automatically determines the correct resource class for STI models in polymorphic relationships:
+
+```ruby
+# If a polymorphic relationship returns STI objects,
+# JPie will automatically use the correct resource class
+# (CarResource for Car objects, TruckResource for Truck objects, etc.)
+```
+
+#### Custom STI Types
+
+You can override the automatic type inference if needed:
+
+```ruby
+class CarResource < VehicleResource
+  type 'automobiles'  # Custom type instead of 'cars'
+  attributes :engine_size
+end
+```
+
 ### Authorization and Scoping
 
 Override the default scope method to add authorization:

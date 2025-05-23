@@ -48,6 +48,17 @@ ActiveRecord::Schema.define do
     t.references :taggable, polymorphic: true, null: false
     t.timestamps
   end
+
+  # STI table for vehicles
+  create_table :vehicles do |t|
+    t.string :type
+    t.string :name
+    t.string :brand
+    t.integer :year
+    t.integer :engine_size # specific to cars
+    t.integer :cargo_capacity # specific to trucks
+    t.timestamps
+  end
 end
 
 # Define ActiveRecord models
@@ -92,4 +103,19 @@ end
 class Tagging < ActiveRecord::Base
   belongs_to :tag
   belongs_to :taggable, polymorphic: true
+end
+
+# STI models for testing
+class Vehicle < ActiveRecord::Base
+  validates :name, presence: true
+  validates :brand, presence: true
+  validates :year, presence: true
+end
+
+class Car < Vehicle
+  validates :engine_size, presence: true
+end
+
+class Truck < Vehicle
+  validates :cargo_capacity, presence: true
 end

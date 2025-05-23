@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Automatic CRUD methods in controllers: Controllers now automatically get `index`, `show`, `create`, `update`, and `destroy` methods when including `JPie::Controller` and calling `jsonapi_resource`
 - SimpleCov for code coverage tracking and reporting
+- Comprehensive Single Table Inheritance (STI) support: Automatic type inference, resource inheritance, and polymorphic serialization for Rails STI models
 
 ### Changed
 - Controllers are now much simpler - just `include JPie::Controller` and `jsonapi_resource YourResource` provides full CRUD functionality
