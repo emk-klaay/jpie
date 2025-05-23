@@ -586,6 +586,180 @@ JPie's serializer automatically determines the correct resource class for STI mo
 # (CarResource for Car objects, TruckResource for Truck objects, etc.)
 ```
 
+#### Complete STI Example
+
+Here's a complete example showing STI in action with HTTP requests and responses:
+
+**1. Database Setup**
+
+```ruby
+# Migration
+class CreateVehicles < ActiveRecord::Migration[7.0]
+  def change
+    create_table :vehicles do |t|
+      t.string :type, null: false  # STI discriminator column
+      t.string :name, null: false
+      t.string :brand, null: false
+      t.integer :year, null: false
+      t.integer :engine_size       # Car-specific
+      t.integer :cargo_capacity    # Truck-specific
+      t.timestamps
+    end
+    
+    add_index :vehicles, :type
+  end
+end
+```
+
+**2. Models**
+
+```ruby
+class Vehicle < ApplicationRecord
+  validates :name, :brand, :year, presence: true
+end
+
+class Car < Vehicle
+  validates :engine_size, presence: true
+end
+
+class Truck < Vehicle  
+  validates :cargo_capacity, presence: true
+end
+```
+
+**3. Resources**
+
+```ruby
+class VehicleResource < JPie::Resource
+  attributes :name, :brand, :year
+  meta_attributes :created_at, :updated_at
+end
+
+class CarResource < VehicleResource
+  attributes :engine_size
+end
+
+class TruckResource < VehicleResource
+  attributes :cargo_capacity
+end
+```
+
+**4. Controllers**
+
+```ruby
+class VehiclesController < ApplicationController
+  include JPie::Controller
+  # Returns all vehicles (cars, trucks, etc.)
+end
+
+class CarsController < ApplicationController
+  include JPie::Controller
+  # Returns only cars with car-specific attributes
+end
+
+class TrucksController < ApplicationController
+  include JPie::Controller
+  # Returns only trucks with truck-specific attributes
+end
+```
+
+**5. Routes**
+
+```ruby
+Rails.application.routes.draw do
+  resources :vehicles, only: [:index, :show]
+  resources :cars
+  resources :trucks
+end
+```
+
+**6. Example HTTP Requests and Responses**
+
+**GET /cars/1**
+```json
+{
+  "data": {
+    "id": "1",
+    "type": "cars",
+    "attributes": {
+      "name": "Model 3",
+      "brand": "Tesla", 
+      "year": 2023,
+      "engine_size": 0
+    },
+    "meta": {
+      "created_at": "2024-01-15T10:00:00Z",
+      "updated_at": "2024-01-15T10:00:00Z"
+    }
+  }
+}
+```
+
+**GET /trucks/2**
+```json
+{
+  "data": {
+    "id": "2", 
+    "type": "trucks",
+    "attributes": {
+      "name": "F-150",
+      "brand": "Ford",
+      "year": 2023,
+      "cargo_capacity": 1200
+    },
+    "meta": {
+      "created_at": "2024-01-15T11:00:00Z",
+      "updated_at": "2024-01-15T11:00:00Z"
+    }
+  }
+}
+```
+
+**GET /vehicles (Mixed STI Collection)**
+```json
+{
+  "data": [
+    {
+      "id": "1",
+      "type": "cars",
+      "attributes": {
+        "name": "Model 3",
+        "brand": "Tesla",
+        "year": 2023,
+        "engine_size": 0
+      }
+    },
+    {
+      "id": "2",
+      "type": "trucks", 
+      "attributes": {
+        "name": "F-150",
+        "brand": "Ford",
+        "year": 2023,
+        "cargo_capacity": 1200
+      }
+    }
+  ]
+}
+```
+
+**7. Creating STI Records**
+
+**POST /cars**
+```json
+{
+  "data": {
+    "type": "cars",
+    "attributes": {
+      "name": "Model Y",
+      "brand": "Tesla",
+      "year": 2024,
+      "engine_size": 0
+    }
+  }
+}
+```
+
 #### Custom STI Types
 
 You can override the automatic type inference if needed:
