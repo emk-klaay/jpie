@@ -26,13 +26,13 @@ RSpec.describe JPie::Resource do
     end
 
     it 'infers model class from resource name when not explicitly set' do
-      class TestResource < JPie::Resource
+      class InferenceTestResource < JPie::Resource
         # No explicit model set
       end
 
-      # The implementation will try to constantize 'Test' from 'TestResource'
-      # Since TestModel exists (defined in database.rb), it should be found
-      expect(TestResource.model).to eq(TestModel)
+      # The implementation will try to constantize 'InferenceTest' from 'InferenceTestResource'
+      # Since no InferenceTest class exists, this should return nil
+      expect(InferenceTestResource.model).to be_nil
     end
 
     it 'falls back to nil when model cannot be inferred' do

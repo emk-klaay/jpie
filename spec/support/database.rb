@@ -11,12 +11,6 @@ ActiveRecord::Base.establish_connection(
 
 # Define the schema
 ActiveRecord::Schema.define do
-  create_table :test_models do |t|
-    t.string :name
-    t.string :email
-    t.timestamps
-  end
-
   create_table :users do |t|
     t.string :name
     t.string :email
@@ -32,10 +26,6 @@ ActiveRecord::Schema.define do
 end
 
 # Define ActiveRecord models
-class TestModel < ActiveRecord::Base
-  validates :name, presence: true
-end
-
 class User < ActiveRecord::Base
   validates :name, presence: true
   has_many :posts, dependent: :destroy

@@ -8,9 +8,9 @@ require 'active_record'
 # Mock controller for testing
 class ApplicationController < ActionController::Base; end
 
-# Mock resource for testing - uses the ActiveRecord TestModel from database.rb
+# Mock resource for testing - uses the ActiveRecord User model from database.rb
 class TestResource < JPie::Resource
-  model TestModel
+  model User
   attributes :name, :email
 end
 
@@ -46,7 +46,7 @@ RSpec.describe JPie::Controller do
   end
 
   let(:controller) { controller_class.new }
-  let(:test_record) { TestModel.create!(name: 'John', email: 'john@example.com') }
+  let(:test_record) { User.create!(name: 'John', email: 'john@example.com') }
 
   before do
     # Define mock classes
@@ -122,7 +122,7 @@ RSpec.describe JPie::Controller do
 
   describe '#model_class' do
     it 'returns the resource model class' do
-      expect(controller.send(:model_class)).to eq(TestModel)
+      expect(controller.send(:model_class)).to eq(User)
     end
   end
 
@@ -207,7 +207,7 @@ RSpec.describe JPie::Controller do
   describe 'parameter deserialization' do
     it 'deserializes valid JSON' do
       mock_body = double('body')
-      allow(mock_body).to receive(:read).and_return('{"data": {"type": "test-models", "attributes": {"name": "test"}}}')
+      allow(mock_body).to receive(:read).and_return('{"data": {"type": "users", "attributes": {"name": "test"}}}')
 
       mock_request = double('request', body: mock_body)
       controller.request = mock_request
@@ -229,14 +229,14 @@ RSpec.describe JPie::Controller do
 
   describe 'rendering with meta' do
     it 'includes meta in single resource response' do
-      controller.send(:render_jsonapi_resource, TestModel.new, meta: { total: 1 })
+      controller.send(:render_jsonapi_resource, User.new, meta: { total: 1 })
 
       expect(controller.last_render[:json]).to have_key(:meta)
       expect(controller.last_render[:json][:meta]).to eq({ total: 1 })
     end
 
     it 'includes meta in collection response' do
-      controller.send(:render_jsonapi_resources, [TestModel.new], meta: { total: 1 })
+      controller.send(:render_jsonapi_resources, [User.new], meta: { total: 1 })
 
       expect(controller.last_render[:json]).to have_key(:meta)
       expect(controller.last_render[:json][:meta]).to eq({ total: 1 })
