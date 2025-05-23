@@ -9,6 +9,6 @@ end
 
 class PostResource < JPie::Resource
   model Post
-  attributes :title, :content, :user_id, :created_at, :updated_at
+  attributes :title, :content, :created_at, :updated_at
   relationship :user, resource: 'UserResource'
 end

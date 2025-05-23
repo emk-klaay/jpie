@@ -27,7 +27,7 @@ RSpec.describe PostResource do
 
   describe '.attribute' do
     it 'defines the correct attributes' do
-      expect(described_class._attributes).to contain_exactly(:title, :content, :user_id, :created_at, :updated_at)
+      expect(described_class._attributes).to contain_exactly(:title, :content, :created_at, :updated_at)
     end
   end
 
@@ -37,11 +37,11 @@ RSpec.describe PostResource do
 
       expect(attributes).to include(
         title: 'Test Post',
-        content: 'This is a test post content',
-        user_id: user.id
+        content: 'This is a test post content'
       )
       expect(attributes).to have_key(:created_at)
       expect(attributes).to have_key(:updated_at)
+      expect(attributes).not_to have_key(:user_id)
     end
   end
 
@@ -49,7 +49,6 @@ RSpec.describe PostResource do
     it 'returns the correct attribute values', :aggregate_failures do
       expect(resource_instance.title).to eq('Test Post')
       expect(resource_instance.content).to eq('This is a test post content')
-      expect(resource_instance.user_id).to eq(user.id)
     end
   end
 end

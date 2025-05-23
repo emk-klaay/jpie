@@ -107,8 +107,8 @@ RSpec.describe JPie do
         result[:included].each do |included_post|
           expect(included_post[:type]).to eq('posts')
 
-          # PostResource defines: title, content, user_id, created_at, updated_at
-          expected_attributes = %w[title content user_id created_at updated_at]
+          # PostResource defines: title, content, created_at, updated_at
+          expected_attributes = %w[title content created_at updated_at]
           actual_attributes = included_post[:attributes].keys
 
           expect(actual_attributes).to include(*expected_attributes)
@@ -116,7 +116,6 @@ RSpec.describe JPie do
           # Verify attribute values are present and correct
           expect(included_post[:attributes]['title']).to be_a(String)
           expect(included_post[:attributes]['content']).to be_a(String)
-          expect(included_post[:attributes]['user_id']).to eq(user.id)
           expect(included_post[:attributes]['created_at']).to be_a(String)
           expect(included_post[:attributes]['updated_at']).to be_a(String)
 
@@ -198,8 +197,8 @@ RSpec.describe JPie do
         result[:included].each do |included_post|
           expect(included_post[:type]).to eq('posts')
 
-          # PostResource defines: title, content, user_id, created_at, updated_at
-          expected_attributes = %w[title content user_id created_at updated_at]
+          # PostResource defines: title, content, created_at, updated_at
+          expected_attributes = %w[title content created_at updated_at]
           actual_attributes = included_post[:attributes].keys
 
           expect(actual_attributes).to include(*expected_attributes)
@@ -207,7 +206,6 @@ RSpec.describe JPie do
           # Verify all attributes have appropriate values
           expect(included_post[:attributes]['title']).to be_a(String)
           expect(included_post[:attributes]['content']).to be_a(String)
-          expect(included_post[:attributes]['user_id']).to be_an(Integer)
           expect(included_post[:attributes]['created_at']).to be_a(String)
           expect(included_post[:attributes]['updated_at']).to be_a(String)
         end
