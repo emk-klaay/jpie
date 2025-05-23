@@ -83,7 +83,8 @@ RSpec.describe JPie::Serializer do
       result = serializer.serialize(first_post, {}, includes: ['nonexistent'])
 
       expect(result).to have_key(:data)
-      expect(result).not_to have_key(:included)
+      expect(result).to have_key(:included)
+      expect(result[:included]).to be_empty
     end
   end
 

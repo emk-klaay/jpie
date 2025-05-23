@@ -38,7 +38,7 @@ module JPie
 
     def add_included_data(result, resources, includes, context)
       included_data = collect_included_data(resources, includes, context)
-      result[:included] = included_data if included_data.any?
+      result[:included] = included_data
     end
 
     def serialize_single(resource)
