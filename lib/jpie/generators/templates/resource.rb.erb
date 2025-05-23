@@ -1,0 +1,12 @@
+# frozen_string_literal: true
+
+class <%= class_name %>Resource < JPie::Resource
+  model <%= model_class_name %>
+
+<% if resource_attributes.any? -%>
+  attributes <%= resource_attributes.map { |attr| ":#{attr}" }.join(', ') %>
+<% else -%>
+  # Define your attributes here:
+  # attributes :name, :email, :created_at
+<% end -%>
+end 
