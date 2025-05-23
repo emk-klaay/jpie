@@ -194,6 +194,13 @@ JPie is thoroughly tested with RSpec. Run the test suite:
 bundle exec rspec
 ```
 
+Generate code coverage report:
+
+```bash
+bundle exec rspec
+open coverage/index.html  # View coverage report
+```
+
 Run code quality checks:
 
 ```bash

@@ -18,5 +18,6 @@ end
 
 group :test do
   gem 'rails', '~> 8.0'
+  gem 'simplecov', '~> 0.22.0', require: false
   gem 'sqlite3', '~> 1.4'
 end

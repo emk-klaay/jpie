@@ -1,5 +1,18 @@
 # frozen_string_literal: true
 
+require 'simplecov'
+
+SimpleCov.start do
+  add_filter '/spec/'
+  add_filter '/vendor/'
+  
+  add_group 'Core', 'lib/jpie'
+  add_group 'Generators', 'lib/jpie/generators'
+  
+  minimum_coverage 85
+  minimum_coverage_by_file 75
+end
+
 require 'jpie'
 require 'ostruct'
 
