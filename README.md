@@ -62,28 +62,40 @@ class UsersController < ApplicationController
   
   jsonapi_resource UserResource
   
+  # That's it! The following methods are automatically provided:
+  # - index: GET /users
+  # - show: GET /users/:id  
+  # - create: POST /users
+  # - update: PATCH/PUT /users/:id
+  # - destroy: DELETE /users/:id
+end
+```
+
+You can override any of these methods for custom behavior:
+
+```ruby
+class UsersController < ApplicationController
+  include JPie::Controller
+  
+  jsonapi_resource UserResource
+  
+  # Override index to add filtering
   def index
-    users = User.all
+    users = User.where(active: true)
     render_jsonapi_resources(users)
   end
   
-  def show
-    user = User.find(params[:id])
-    render_jsonapi_resource(user)
-  end
-  
+  # Override create to add custom logic
   def create
     attributes = deserialize_params
-    user = User.create!(attributes)
+    user = User.new(attributes)
+    user.created_by = current_user
+    user.save!
+    
     render_jsonapi_resource(user, status: :created)
   end
   
-  def update
-    user = User.find(params[:id])
-    attributes = deserialize_params
-    user.update!(attributes)
-    render_jsonapi_resource(user)
-  end
+  # All other methods (show, update, destroy) use the defaults
 end
 ```
 

@@ -5,19 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Automatic CRUD methods in controllers: Controllers now automatically get `index`, `show`, `create`, `update`, and `destroy` methods when including `JPie::Controller` and calling `jsonapi_resource`
+- SimpleCov for code coverage tracking and reporting
+
+### Changed
+- Controllers are now much simpler - just `include JPie::Controller` and `jsonapi_resource YourResource` provides full CRUD functionality
+- CRUD methods can still be overridden for custom behavior
+
 ## [0.1.0] - 2024-01-01
 
 ### Added
-- Initial release of JPie gem
-- Basic JSON:API resource serialization and deserialization
-- Support for attributes only (no relationships yet)
-- Rails 8+ integration via Controller module
-- Comprehensive error handling with JSON:API compliant error responses
-- Configurable key formatting (dasherized, underscored, camelized)
-- Rails generator for creating resource classes
-- RSpec test suite with comprehensive coverage
-- RuboCop and Brakeman integration for code quality
-- Ruby 3.4+ and Rails 8+ compatibility
+- Initial release with core functionality
+- JSON:API compliant serialization and deserialization
+- Resource definition with attributes
+- Controller integration module
+- Rails generator for creating resources
+- Comprehensive error handling
+- Configuration system for key formats
+- Full test suite with RSpec
 
 ### Features
 - `JPie::Resource` - Base class for defining API resources

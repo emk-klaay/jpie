@@ -8,8 +8,11 @@ module JPie
 
     included do
       rescue_from JPie::Errors::Error, with: :render_jsonapi_error
-      rescue_from ActiveRecord::RecordNotFound, with: :render_not_found_error
-      rescue_from ActiveRecord::RecordInvalid, with: :render_validation_error
+      
+      if defined?(ActiveRecord)
+        rescue_from ActiveRecord::RecordNotFound, with: :render_not_found_error
+        rescue_from ActiveRecord::RecordInvalid, with: :render_validation_error
+      end
     end
 
     class_methods do
@@ -25,10 +28,87 @@ module JPie
         define_method :deserializer do
           @deserializer ||= JPie::Deserializer.new(resource_class)
         end
+
+        # Define automatic CRUD methods
+        define_automatic_crud_methods(resource_class)
+      end
+
+      private
+
+      def define_automatic_crud_methods(resource_class)
+        model_class = resource_class.model
+
+        # GET /resources
+        define_method :index do
+          resources = model_class.all
+          render_jsonapi_resources(resources)
+        end
+
+        # GET /resources/:id
+        define_method :show do
+          resource = model_class.find(params[:id])
+          render_jsonapi_resource(resource)
+        end
+
+        # POST /resources
+        define_method :create do
+          attributes = deserialize_params
+          resource = model_class.create!(attributes)
+          render_jsonapi_resource(resource, status: :created)
+        end
+
+        # PATCH/PUT /resources/:id
+        define_method :update do
+          resource = model_class.find(params[:id])
+          attributes = deserialize_params
+          resource.update!(attributes)
+          render_jsonapi_resource(resource)
+        end
+
+        # DELETE /resources/:id
+        define_method :destroy do
+          resource = model_class.find(params[:id])
+          resource.destroy!
+          head :no_content
+        end
       end
     end
 
+    # These methods can still be called manually or used to override defaults
+    def index
+      resources = model_class.all
+      render_jsonapi_resources(resources)
+    end
+
+    def show
+      resource = model_class.find(params[:id])
+      render_jsonapi_resource(resource)
+    end
+
+    def create
+      attributes = deserialize_params
+      resource = model_class.create!(attributes)
+      render_jsonapi_resource(resource, status: :created)
+    end
+
+    def update
+      resource = model_class.find(params[:id])
+      attributes = deserialize_params
+      resource.update!(attributes)
+      render_jsonapi_resource(resource)
+    end
+
+    def destroy
+      resource = model_class.find(params[:id])
+      resource.destroy!
+      head :no_content
+    end
+
     protected
+
+    def model_class
+      resource_class.model
+    end
 
     def render_jsonapi_resource(resource, status: :ok, meta: nil)
       json_data = serializer.serialize(resource, context)

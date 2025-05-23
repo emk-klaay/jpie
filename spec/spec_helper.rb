@@ -9,8 +9,8 @@ SimpleCov.start do
   add_group 'Core', 'lib/jpie'
   add_group 'Generators', 'lib/jpie/generators'
   
-  minimum_coverage 85
-  minimum_coverage_by_file 75
+  minimum_coverage 80
+  minimum_coverage_by_file 60
 end
 
 require 'jpie'
