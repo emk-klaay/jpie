@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require:
   - rubocop-performance
   - rubocop-rails
@@ -35,24 +37,19 @@ Naming/PredicateName:
 
 Metrics/ClassLength:
   Max: 150
-  Exclude:
-    - 'lib/jpie/resource.rb'  # Core resource class with many features
 
 Metrics/ModuleLength:
   Max: 150
-  Exclude:
-    - 'lib/jpie/controller.rb'  # Core CRUD module with automatic method generation
 
 Metrics/MethodLength:
   Max: 20
-  Exclude:
-    - 'lib/jpie/controller.rb'  # CRUD method generation is longer
 
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
     - '*.gemspec'
-    - 'lib/jpie/controller.rb'  # class_methods block for CRUD generation
+    - 'lib/jpie/resource/**/*'  # Resource modules have large class_methods blocks for DSL methods
+    - 'lib/jpie/controller/**/*'  # Controller modules have large class_methods blocks for DSL methods
 
 # Rails cops that don't apply to our gem
 Rails/TimeZone:
