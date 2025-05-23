@@ -336,6 +336,142 @@ class PostsController < ApplicationController
 end
 ```
 
+### Sorting
+
+JPie provides full JSON:API compliant sorting functionality. By default, all defined attributes in your resource are sortable:
+
+#### Basic Sorting
+
+```ruby
+# GET /posts?sort=title
+# Sorts posts by title in ascending order
+
+# GET /posts?sort=-title  
+# Sorts posts by title in descending order (note the minus prefix)
+
+# GET /posts?sort=title,-created_at
+# Sorts by title ascending, then by created_at descending
+```
+
+#### Default Sortable Fields
+
+All attributes defined in your resource are automatically sortable:
+
+```ruby
+class PostResource < JPie::Resource
+  model Post
+  
+  attributes :title, :content, :created_at
+  # All of these are sortable by default: title, content, created_at
+end
+```
+
+#### Custom Sortable Fields
+
+You can define custom sorting logic for complex scenarios:
+
+```ruby
+class PostResource < JPie::Resource
+  model Post
+  
+  attributes :title, :content
+  
+  # Add a custom sortable field with default column mapping
+  sortable_by :published_date, :published_at
+  
+  # Add a custom sortable field with custom sorting logic
+  sortable_by :popularity do |query, direction|
+    if direction == :asc
+      query.order(:likes_count, :comments_count)
+    else
+      query.order(likes_count: :desc, comments_count: :desc)
+    end
+  end
+  
+  # Complex custom sorting
+  sortable_by :relevance do |query, direction|
+    case direction
+    when :asc
+      query.order('(likes_count + comments_count) ASC')
+    when :desc
+      query.order('(likes_count + comments_count) DESC')
+    end
+  end
+end
+```
+
+#### Error Handling
+
+JPie automatically validates sort fields and provides helpful error messages:
+
+```ruby
+# GET /posts?sort=invalid_field
+# Returns 400 Bad Request with error:
+# {
+#   "errors": [{
+#     "status": "400",
+#     "title": "Bad Request", 
+#     "detail": "Invalid sort field: invalid_field. Sortable fields are: title, content, created_at"
+#   }]
+# }
+```
+
+#### Controller Integration
+
+Sorting works automatically with the included controller methods:
+
+```ruby
+class PostsController < ApplicationController
+  include JPie::Controller
+  jsonapi_resource PostResource
+  
+  # The index method automatically handles sorting
+  # No additional code needed!
+end
+
+# You can also use sorting in custom controller methods:
+class PostsController < ApplicationController
+  include JPie::Controller
+  jsonapi_resource PostResource
+  
+  def featured
+    posts = Post.where(featured: true)
+    sort_fields = parse_sort_params
+    posts = PostResource.sort(posts, sort_fields) if sort_fields.any?
+    render_jsonapi_resources(posts)
+  end
+end
+```
+
+#### Advanced Sorting Examples
+
+```ruby
+class UserResource < JPie::Resource
+  model User
+  
+  attributes :name, :email, :created_at
+  
+  # Sort by full name (combining first and last name)
+  sortable_by :full_name do |query, direction|
+    query.order("CONCAT(first_name, ' ', last_name) #{direction.to_s.upcase}")
+  end
+  
+  # Sort by activity level
+  sortable_by :activity do |query, direction|
+    subquery = Post.select('COUNT(*)')
+                   .where('posts.user_id = users.id')
+                   .to_sql
+    
+    query.order("(#{subquery}) #{direction.to_s.upcase}")
+  end
+end
+
+# Usage:
+# GET /users?sort=full_name        # Sort by full name ascending
+# GET /users?sort=-activity        # Sort by activity descending  
+# GET /users?sort=name,-created_at # Sort by name asc, then created_at desc
+```
+
 ## Testing
 
 JPie is thoroughly tested with RSpec. Run the test suite:
@@ -391,12 +527,17 @@ Each class is designed to be:
 
 ## Roadmap
 
-The initial version focuses on basic JSON:API serialization/deserialization with attributes only. Future versions will add:
+JPie has evolved from basic JSON:API serialization to a comprehensive solution. Current features include:
 
+**✅ Completed Features:**
+- Basic JSON:API serialization/deserialization with attributes
+- Resource scoping for authorization  
+- **Sorting** - Full JSON:API compliant sorting with custom sort logic support
 - Relationships (has_one, has_many, belongs_to)
 - Sparse fieldsets
 - Inclusion of related resources
-- Sorting
+
+**🚧 Future Features:**
 - Pagination
 - Filtering
 - Meta information

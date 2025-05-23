@@ -35,6 +35,8 @@ Naming/PredicateName:
 
 Metrics/ClassLength:
   Max: 150
+  Exclude:
+    - 'lib/jpie/resource.rb'  # Core resource class with many features
 
 Metrics/ModuleLength:
   Max: 150
