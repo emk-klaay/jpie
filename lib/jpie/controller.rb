@@ -135,8 +135,8 @@ module JPie
 
     def deserialize_params
       deserializer.deserialize(request.body.read, context)
-    rescue JSON::ParserError
-      raise JPie::Errors::BadRequestError.new(detail: 'Invalid JSON')
+    rescue JSON::ParserError => e
+      raise JPie::Errors::BadRequestError.new(detail: "Invalid JSON: #{e.message}")
     end
 
     def context

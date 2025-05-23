@@ -19,8 +19,8 @@ module JPie
       else
         deserialize_single(data['data'], context)
       end
-    rescue JSON::ParserError
-      raise Errors::BadRequestError.new(detail: 'Invalid JSON')
+    rescue JSON::ParserError => e
+      raise Errors::BadRequestError.new(detail: "Invalid JSON: #{e.message}")
     end
 
     private
