@@ -42,6 +42,8 @@ module JPie
       def define_index_method(resource_class)
         define_method :index do
           resources = resource_class.scope(context)
+          sort_fields = parse_sort_params
+          resources = resource_class.sort(resources, sort_fields) if sort_fields.any?
           render_jsonapi_resources(resources)
         end
       end
@@ -82,6 +84,8 @@ module JPie
     # These methods can still be called manually or used to override defaults
     def index
       resources = resource_class.scope(context)
+      sort_fields = parse_sort_params
+      resources = resource_class.sort(resources, sort_fields) if sort_fields.any?
       render_jsonapi_resources(resources)
     end
 
@@ -164,6 +168,10 @@ module JPie
 
     def parse_include_params
       params[:include]&.split(',')&.map(&:strip) || []
+    end
+
+    def parse_sort_params
+      params[:sort]&.split(',')&.map(&:strip) || []
     end
 
     private

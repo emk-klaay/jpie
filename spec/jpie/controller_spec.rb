@@ -88,6 +88,53 @@ RSpec.describe JPie::Controller do
 
       expect(controller.last_render[:status]).to eq(:ok)
     end
+
+    context 'with sorting' do
+      it 'applies sorting when sort parameter is provided' do
+        controller.params = { sort: 'name' }
+        
+        # Mock the resource class to verify sort is called
+        allow(UserResource).to receive(:scope).and_return(User.all)
+        allow(UserResource).to receive(:sort).and_return(User.all)
+        
+        controller.index
+        
+        expect(UserResource).to have_received(:sort).with(User.all, ['name'])
+      end
+
+      it 'applies multiple sort fields' do
+        controller.params = { sort: 'name,-email' }
+        
+        allow(UserResource).to receive(:scope).and_return(User.all)
+        allow(UserResource).to receive(:sort).and_return(User.all)
+        
+        controller.index
+        
+        expect(UserResource).to have_received(:sort).with(User.all, ['name', '-email'])
+      end
+
+      it 'does not apply sorting when no sort parameter' do
+        controller.params = {}
+        
+        allow(UserResource).to receive(:scope).and_return(User.all)
+        allow(UserResource).to receive(:sort).and_return(User.all)
+        
+        controller.index
+        
+        expect(UserResource).not_to have_received(:sort)
+      end
+
+      it 'handles empty sort parameter' do
+        controller.params = { sort: '' }
+        
+        allow(UserResource).to receive(:scope).and_return(User.all)
+        allow(UserResource).to receive(:sort).and_return(User.all)
+        
+        controller.index
+        
+        expect(UserResource).not_to have_received(:sort)
+      end
+    end
   end
 
   describe '#show' do
