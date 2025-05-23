@@ -100,15 +100,16 @@ module JPie
 
         next unless relationship_options
 
-        related_resource_class_name = relationship_options[:resource]
-        related_resource_class = related_resource_class_name.constantize
-
         resources.each do |resource|
           related_objects = resource.public_send(include_sym)
           next unless related_objects
 
           related_objects = Array(related_objects)
           related_objects.each do |related_object|
+            # Handle polymorphic relationships by determining resource class from object
+            related_resource_class = determine_resource_class(related_object, relationship_options)
+            next unless related_resource_class
+            
             related_resource = related_resource_class.new(related_object, context)
             resource_data = serialize_resource_data(related_resource)
             
@@ -137,6 +138,31 @@ module JPie
       end
 
       included
+    end
+
+    def determine_resource_class(object, relationship_options)
+      # First try the explicitly specified resource class
+      if relationship_options[:resource]
+        begin
+          return relationship_options[:resource].constantize
+        rescue NameError
+          # If the resource class doesn't exist, it might be a polymorphic relationship
+          # Fall through to polymorphic detection
+        end
+      end
+      
+      # For polymorphic relationships, determine resource class from object class
+      if object&.class
+        resource_class_name = "#{object.class.name}Resource"
+        begin
+          return resource_class_name.constantize
+        rescue NameError
+          # Resource class doesn't exist for this object type
+          return nil
+        end
+      end
+      
+      nil
     end
 
     def parse_nested_includes(includes)

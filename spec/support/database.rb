@@ -43,9 +43,9 @@ ActiveRecord::Schema.define do
     t.timestamps
   end
 
-  create_table :post_tags do |t|
-    t.integer :post_id
+  create_table :taggings do |t|
     t.integer :tag_id
+    t.references :taggable, polymorphic: true, null: false
     t.timestamps
   end
 end
@@ -62,8 +62,8 @@ class Post < ActiveRecord::Base
   belongs_to :user
   validates :title, presence: true
   has_many :comments, dependent: :destroy
-  has_many :post_tags, dependent: :destroy
-  has_many :tags, through: :post_tags
+  has_many :taggings, as: :taggable, dependent: :destroy
+  has_many :tags, through: :taggings
 end
 
 class Comment < ActiveRecord::Base
@@ -73,6 +73,8 @@ class Comment < ActiveRecord::Base
   validates :content, presence: true
   has_many :likes, dependent: :destroy
   has_many :replies, class_name: 'Comment', foreign_key: 'parent_comment_id', dependent: :destroy
+  has_many :taggings, as: :taggable, dependent: :destroy
+  has_many :tags, through: :taggings
 end
 
 class Like < ActiveRecord::Base
@@ -82,11 +84,12 @@ end
 
 class Tag < ActiveRecord::Base
   validates :name, presence: true
-  has_many :post_tags, dependent: :destroy
-  has_many :posts, through: :post_tags
+  has_many :taggings, dependent: :destroy
+  has_many :posts, through: :taggings, source: :taggable, source_type: 'Post'
+  has_many :comments, through: :taggings, source: :taggable, source_type: 'Comment'
 end
 
-class PostTag < ActiveRecord::Base
-  belongs_to :post
+class Tagging < ActiveRecord::Base
   belongs_to :tag
+  belongs_to :taggable, polymorphic: true
 end

@@ -14,8 +14,8 @@ RSpec.describe 'Deep Nesting Evaluation' do
   let!(:post1) { Post.create!(title: 'Post 1', content: 'Content 1', user: user1) }
   let!(:post2) { Post.create!(title: 'Post 2', content: 'Content 2', user: user2) }
   
-  let!(:post_tag1) { PostTag.create!(post: post1, tag: tag1) }
-  let!(:post_tag2) { PostTag.create!(post: post1, tag: tag2) }
+  let!(:tagging1) { Tagging.create!(tag: tag1, taggable: post1) }
+  let!(:tagging2) { Tagging.create!(tag: tag2, taggable: post1) }
   
   let!(:comment1) { Comment.create!(content: 'Comment 1', user: user2, post: post1) }
   let!(:comment2) { Comment.create!(content: 'Comment 2', user: user3, post: post1) }
