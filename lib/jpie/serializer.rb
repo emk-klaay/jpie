@@ -54,12 +54,7 @@ module JPie
     end
 
     def serialize_value(value)
-      case value
-      when Time, DateTime, Date, ActiveSupport::TimeWithZone
-        value.iso8601
-      else
-        value
-      end
+      value.respond_to?(:iso8601) ? value.iso8601 : value
     end
 
     def format_key(key)
