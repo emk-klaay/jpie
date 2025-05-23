@@ -18,7 +18,7 @@ RSpec.describe 'CommentsController' do
     end)
 
     stub_const('MockResponse', Class.new)
-    
+
     # Define a local base controller for this test
     stub_const('BaseController', Class.new do
       def self.rescue_from(exception_class, with: nil)
@@ -99,10 +99,10 @@ RSpec.describe 'CommentsController' do
       )
 
       resource = CommentResource.new(comment)
-      
+
       expect(resource.content).to eq('Test comment content')
       expect(resource.user).to eq(user)
       expect(resource.post).to eq(post_instance)
     end
   end
-end 
+end

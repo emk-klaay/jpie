@@ -6,11 +6,11 @@ RSpec.describe 'Nested Includes Integration' do
   # Set up test data with proper relationships
   let!(:user1) { User.create!(name: 'Alice Smith', email: 'alice@example.com') }
   let!(:user2) { User.create!(name: 'Bob Johnson', email: 'bob@example.com') }
-  
+
   let!(:post1) { Post.create!(title: 'First Post', content: 'Content of first post', user: user1) }
   let!(:post2) { Post.create!(title: 'Second Post', content: 'Content of second post', user: user2) }
   let!(:post3) { Post.create!(title: 'Third Post', content: 'Content of third post', user: user1) }
-  
+
   let!(:comment1) { Comment.create!(content: 'Great post!', user: user2, post: post1) }
   let!(:comment2) { Comment.create!(content: 'I agree!', user: user1, post: post1) }
   let!(:comment3) { Comment.create!(content: 'Interesting perspective', user: user1, post: post2) }
@@ -31,7 +31,7 @@ RSpec.describe 'Nested Includes Integration' do
     end)
 
     stub_const('MockResponse', Class.new)
-    
+
     stub_const('BaseController', Class.new do
       def self.rescue_from(exception_class, with: nil)
         # Mock implementation for testing
@@ -91,10 +91,10 @@ RSpec.describe 'Nested Includes Integration' do
       it 'includes all posts in the main data section', :aggregate_failures do
         expect(response_data[:data]).to be_an(Array)
         expect(response_data[:data].length).to eq(3)
-        
+
         post_ids = response_data[:data].map { |post| post[:id] }
         expect(post_ids).to contain_exactly(post1.id.to_s, post2.id.to_s, post3.id.to_s)
-        
+
         response_data[:data].each do |post_data|
           expect(post_data[:type]).to eq('posts')
           expect(post_data[:attributes]).to have_key('title')
@@ -105,13 +105,13 @@ RSpec.describe 'Nested Includes Integration' do
       it 'includes all users in the included section without duplication', :aggregate_failures do
         user_data = response_data[:included].select { |item| item[:type] == 'users' }
         expect(user_data.length).to eq(2)
-        
+
         user_ids = user_data.map { |user| user[:id] }
         expect(user_ids).to contain_exactly(user1.id.to_s, user2.id.to_s)
-        
+
         alice_data = user_data.find { |u| u[:attributes]['name'] == 'Alice Smith' }
         bob_data = user_data.find { |u| u[:attributes]['name'] == 'Bob Johnson' }
-        
+
         expect(alice_data).not_to be_nil
         expect(bob_data).not_to be_nil
         expect(alice_data[:attributes]['email']).to eq('alice@example.com')
@@ -121,15 +121,15 @@ RSpec.describe 'Nested Includes Integration' do
       it 'includes all comments in the included section', :aggregate_failures do
         comment_data = response_data[:included].select { |item| item[:type] == 'comments' }
         expect(comment_data.length).to eq(4)
-        
+
         comment_contents = comment_data.map { |c| c[:attributes]['content'] }
         expect(comment_contents).to contain_exactly(
           'Great post!',
-          'I agree!', 
+          'I agree!',
           'Interesting perspective',
           'Thanks for sharing'
         )
-        
+
         comment_data.each do |comment|
           expect(comment[:type]).to eq('comments')
           expect(comment[:attributes]).to have_key('content')
@@ -142,7 +142,7 @@ RSpec.describe 'Nested Includes Integration' do
       it 'includes the correct total number of included items', :aggregate_failures do
         # Should include: 2 users + 4 comments = 6 total items
         expect(response_data[:included].length).to eq(6)
-        
+
         types = response_data[:included].map { |item| item[:type] }
         expect(types.count('users')).to eq(2)
         expect(types.count('comments')).to eq(4)
@@ -153,8 +153,8 @@ RSpec.describe 'Nested Includes Integration' do
         user_items = response_data[:included].select { |item| item[:type] == 'users' }
         user_keys = user_items.map { |item| [item[:type], item[:id]] }
         expect(user_keys.uniq.length).to eq(user_keys.length)
-        
-        # Verify no duplicate comments  
+
+        # Verify no duplicate comments
         comment_items = response_data[:included].select { |item| item[:type] == 'comments' }
         comment_keys = comment_items.map { |item| [item[:type], item[:id]] }
         expect(comment_keys.uniq.length).to eq(comment_keys.length)
@@ -173,13 +173,13 @@ RSpec.describe 'Nested Includes Integration' do
         expect(response_data[:data][:id]).to eq(post1.id.to_s)
         expect(response_data[:data][:type]).to eq('posts')
         expect(response_data[:data][:attributes]['title']).to eq('First Post')
-        
+
         # Should include: 1 user (Alice) + all her comments (2 total: one on post1, one on post2)
         expect(response_data[:included].length).to eq(3)
-        
+
         user_data = response_data[:included].find { |item| item[:type] == 'users' }
         expect(user_data[:attributes]['name']).to eq('Alice Smith')
-        
+
         comment_data = response_data[:included].select { |item| item[:type] == 'comments' }
         expect(comment_data.length).to eq(2)
         comment_contents = comment_data.map { |c| c[:attributes]['content'] }
@@ -192,15 +192,17 @@ RSpec.describe 'Nested Includes Integration' do
     it 'demonstrates the expected response structure for GET /posts?include=user,user.comments' do
       controller_class = Class.new(BaseController) do
         include JPie::Controller
-        def self.name; 'PostsController'; end
+        def self.name = 'PostsController'
         attr_accessor :params, :request, :response
+
         def initialize
           @params = {}
           @request = MockRequest.new
           @response = MockResponse.new
         end
-        def render(options = {}); @last_render = options; end
-        def action_name; 'show'; end
+
+        def render(options = {}) = @last_render = options
+        def action_name = 'show'
         attr_reader :last_render
       end
 
@@ -209,12 +211,12 @@ RSpec.describe 'Nested Includes Integration' do
       controller.show
 
       response = controller.last_render[:json]
-      
+
       # This demonstrates what the actual JSON:API response looks like
       puts "\n--- Example JSON:API Response for GET /posts/#{post1.id}?include=user,user.comments ---"
       puts JSON.pretty_generate(response)
       puts "--- End of example response ---\n"
-      
+
       # Verify it follows JSON:API spec
       expect(response).to have_key(:data)
       expect(response).to have_key(:included)
@@ -222,4 +224,4 @@ RSpec.describe 'Nested Includes Integration' do
       expect(response[:included]).to be_an(Array)
     end
   end
-end 
+end

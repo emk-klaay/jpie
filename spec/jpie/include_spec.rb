@@ -112,7 +112,7 @@ RSpec.describe JPie::Serializer do
       it 'includes all user comments in included section', :aggregate_failures do
         comment_data = result[:included].select { |item| item[:type] == 'comments' }
         expect(comment_data.length).to eq(3)
-        
+
         comment_contents = comment_data.map { |c| c[:attributes]['content'] }
         expect(comment_contents).to contain_exactly('First comment', 'Second comment', 'Third comment')
       end
@@ -137,11 +137,11 @@ RSpec.describe JPie::Serializer do
 
       it 'includes all related data without duplication', :aggregate_failures do
         expect(result[:included].length).to eq(4) # 1 user + 3 comments
-        
+
         # Verify user is included
         user_data = result[:included].find { |item| item[:type] == 'users' }
         expect(user_data[:id]).to eq(user.id.to_s)
-        
+
         # Verify comments are included
         comment_data = result[:included].select { |item| item[:type] == 'comments' }
         expect(comment_data.length).to eq(3)
@@ -154,7 +154,7 @@ RSpec.describe JPie::Serializer do
       it 'includes the top-level relationship but ignores non-existent nested relationships', :aggregate_failures do
         expect(result).to have_key(:data)
         expect(result).to have_key(:included)
-        
+
         # Should include the user but not fail on nonexistent relationship
         user_data = result[:included].find { |item| item[:type] == 'users' }
         expect(user_data).not_to be_nil

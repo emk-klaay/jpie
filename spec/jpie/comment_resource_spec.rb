@@ -46,7 +46,8 @@ RSpec.describe CommentResource do
 
   describe '.relationship' do
     it 'defines the correct relationships' do
-      expect(described_class._relationships.keys).to contain_exactly(:user, :post, :parent_comment, :likes, :replies, :tags, :taggings)
+      expect(described_class._relationships.keys).to contain_exactly(:user, :post, :parent_comment, :likes, :replies,
+                                                                     :tags, :taggings)
     end
   end
 
@@ -94,4 +95,4 @@ RSpec.describe CommentResource do
       expect(resource_instance.post).to eq(post_instance)
     end
   end
-end 
+end
