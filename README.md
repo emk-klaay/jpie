@@ -278,6 +278,64 @@ def build_context
 end
 ```
 
+### Resource Scoping for Authorization
+
+JPie supports authorization through resource scoping. Override the `scope` method in your resource classes to control which records users can access:
+
+```ruby
+class PostResource < JPie::Resource
+  model Post
+  
+  attributes :title, :content
+  
+  # Override scope for authorization
+  def self.scope(context = {})
+    current_user = context[:current_user]
+    return model.none unless current_user
+    
+    # Admins can see all posts, users can only see their own posts
+    if current_user.admin?
+      model.all
+    else
+      model.where(user: current_user)
+    end
+  end
+end
+```
+
+This works seamlessly with authorization libraries like Pundit:
+
+```ruby
+class PostResource < JPie::Resource
+  model Post
+  
+  attributes :title, :content
+  
+  def self.scope(context = {})
+    current_user = context[:current_user]
+    return model.none unless current_user
+    
+    # Use Pundit policy scopes
+    Pundit.policy_scope(current_user, model)
+  end
+end
+```
+
+The controller automatically uses the scoped query for all CRUD operations:
+
+```ruby
+class PostsController < ApplicationController
+  include JPie::Controller
+  jsonapi_resource PostResource
+  
+  # All these methods automatically use PostResource.scope(context):
+  # - index: shows only posts the user can see
+  # - show: finds only from posts the user can see  
+  # - update: updates only posts the user can modify
+  # - destroy: destroys only posts the user can delete
+end
+```
+
 ## Testing
 
 JPie is thoroughly tested with RSpec. Run the test suite:
