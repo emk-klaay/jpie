@@ -52,7 +52,7 @@ module JPie
       def relationship(name, options = {})
         name = name.to_sym
         _relationships[name] = options
-        
+
         define_method(name) do
           attr_name = options[:attr] || name
           @object.public_send(attr_name)
