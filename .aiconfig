@@ -1,0 +1,65 @@
+# AI Assistant Configuration
+# This file contains rules and guidelines for AI assistants working on the jpie project
+
+[code_style]
+# Follow these code style guidelines
+- Follow Ruby style guide and RuboCop rules defined in .rubocop.yml
+
+[documentation]
+# Documentation requirements
+- Keep README.md up to date with installation and usage instructions
+- Include example usage in documentation
+
+[testing]
+# Testing guidelines
+- Write RSpec tests for all new features
+- Maintain test coverage for all public methods
+- Use meaningful test descriptions
+- Follow the existing test structure in spec/
+- Test both success and error cases
+- Use modern RSpec features and syntax
+
+[git_workflow]
+# Git commit guidelines
+- Write clear, descriptive commit messages
+- Keep commits focused and atomic
+- Run tests before committing
+- Update documentation in the same commit as code changes
+- Ignore spec/examples.txt and other files listed in .gitignore
+- Include Ruby/Rails version requirements in relevant commits
+
+[project_structure]
+# Maintain the following project structure
+- Keep core functionality in lib/jpie/
+- Place tests in spec/jpie/
+- Use proper namespacing (JPie module)
+- Follow Ruby gem best practices
+
+[dependencies]
+# Dependency management
+- Keep dependencies minimal and justified
+- Document new dependencies in README.md
+- Keep development dependencies in Gemfile
+- Ensure compatibility with Ruby 3.4+
+- Only support Rails 8+ features
+- Use modern gem versions
+
+[security]
+# Security guidelines
+- Never commit sensitive data or credentials
+- Use environment variables for configuration
+- Follow secure coding practices
+- Keep dependencies up to date
+- Follow Rails 8+ security best practices
+- Use Ruby 3.4+ security features
+- Implement proper input validation
+
+[compatibility]
+# Compatibility requirements
+- Maintain Ruby 3.4+ compatibility
+- Support Rails 8+ integration
+- Follow JSON:API specification strictly
+
+[style]
+# Styleguide
+- Use `{data:}` rather than `{data: data}`
