@@ -34,34 +34,45 @@ module JPie
       def define_automatic_crud_methods(resource_class)
         model_class = resource_class.model
 
-        # GET /resources
+        define_index_method(model_class)
+        define_show_method(model_class)
+        define_create_method(model_class)
+        define_update_method(model_class)
+        define_destroy_method(model_class)
+      end
+
+      def define_index_method(model_class)
         define_method :index do
           resources = model_class.all
           render_jsonapi_resources(resources)
         end
+      end
 
-        # GET /resources/:id
+      def define_show_method(model_class)
         define_method :show do
           resource = model_class.find(params[:id])
           render_jsonapi_resource(resource)
         end
+      end
 
-        # POST /resources
+      def define_create_method(model_class)
         define_method :create do
           attributes = deserialize_params
           resource = model_class.create!(attributes)
           render_jsonapi_resource(resource, status: :created)
         end
+      end
 
-        # PATCH/PUT /resources/:id
+      def define_update_method(model_class)
         define_method :update do
           resource = model_class.find(params[:id])
           attributes = deserialize_params
           resource.update!(attributes)
           render_jsonapi_resource(resource)
         end
+      end
 
-        # DELETE /resources/:id
+      def define_destroy_method(model_class)
         define_method :destroy do
           resource = model_class.find(params[:id])
           resource.destroy!
