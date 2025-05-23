@@ -74,9 +74,7 @@ module JPie
 
     def unformat_key(key)
       case JPie.configuration.json_key_format
-      when :dasherized
-        key.to_s.underscore
-      when :camelized
+      when :dasherized, :camelized
         key.to_s.underscore
       else
         key.to_s

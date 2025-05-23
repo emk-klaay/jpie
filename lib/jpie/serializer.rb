@@ -55,9 +55,7 @@ module JPie
 
     def serialize_value(value)
       case value
-      when Time, DateTime, Date
-        value.iso8601
-      when ActiveSupport::TimeWithZone
+      when Time, DateTime, Date, ActiveSupport::TimeWithZone
         value.iso8601
       else
         value
