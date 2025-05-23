@@ -79,6 +79,18 @@ module JPie
         end
       end
 
+      def has_many(name, options = {})
+        name = name.to_sym
+        resource_class_name = options[:resource] || infer_resource_class_name(name)
+        relationship(name, { resource: resource_class_name }.merge(options))
+      end
+
+      def has_one(name, options = {})
+        name = name.to_sym
+        resource_class_name = options[:resource] || infer_resource_class_name(name)
+        relationship(name, { resource: resource_class_name }.merge(options))
+      end
+
       private
 
       def infer_model_class
@@ -89,6 +101,14 @@ module JPie
 
       def infer_type_name
         model&.model_name&.plural || name.chomp('Resource').underscore.pluralize
+      end
+
+      def infer_resource_class_name(relationship_name)
+        # Convert relationship name to resource class name
+        # :posts -> "PostResource"
+        # :user -> "UserResource"
+        singularized_name = relationship_name.to_s.singularize
+        "#{singularized_name.camelize}Resource"
       end
     end
 

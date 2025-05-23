@@ -27,6 +27,12 @@ Style/StringLiterals:
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: single_quotes
 
+# Naming cops
+Naming/PredicateName:
+  AllowedMethods:
+    - has_many     # DSL method for defining relationships
+    - has_one      # DSL method for defining relationships
+
 Metrics/ClassLength:
   Max: 150
 

@@ -80,6 +80,86 @@ RSpec.describe JPie::Resource do
     end
   end
 
+  describe '.relationship' do
+    it 'defines relationship methods and adds to _relationships hash' do
+      test_resource_class = Class.new(JPie::Resource) do
+        relationship :test_rel, resource: 'TestResource'
+      end
+
+      expect(test_resource_class._relationships[:test_rel]).to include(resource: 'TestResource')
+    end
+  end
+
+  describe '.has_many' do
+    it 'infers resource class name from relationship name' do
+      test_resource_class = Class.new(JPie::Resource) do
+        has_many :posts
+      end
+
+      expect(test_resource_class._relationships[:posts]).to include(resource: 'PostResource')
+    end
+
+    it 'allows explicit resource class override' do
+      test_resource_class = Class.new(JPie::Resource) do
+        has_many :custom_posts, resource: 'ArticleResource'
+      end
+
+      expect(test_resource_class._relationships[:custom_posts]).to include(resource: 'ArticleResource')
+    end
+
+    it 'handles pluralized relationship names correctly' do
+      test_resource_class = Class.new(JPie::Resource) do
+        has_many :categories
+      end
+
+      expect(test_resource_class._relationships[:categories]).to include(resource: 'CategoryResource')
+    end
+
+    it 'defines the relationship method on the resource instance' do
+      test_resource_class = Class.new(JPie::Resource) do
+        has_many :posts
+      end
+
+      instance = test_resource_class.new(double('model'))
+      expect(instance).to respond_to(:posts)
+    end
+  end
+
+  describe '.has_one' do
+    it 'infers resource class name from relationship name' do
+      test_resource_class = Class.new(JPie::Resource) do
+        has_one :user
+      end
+
+      expect(test_resource_class._relationships[:user]).to include(resource: 'UserResource')
+    end
+
+    it 'allows explicit resource class override' do
+      test_resource_class = Class.new(JPie::Resource) do
+        has_one :author, resource: 'UserResource'
+      end
+
+      expect(test_resource_class._relationships[:author]).to include(resource: 'UserResource')
+    end
+
+    it 'handles singularized relationship names correctly' do
+      test_resource_class = Class.new(JPie::Resource) do
+        has_one :organization
+      end
+
+      expect(test_resource_class._relationships[:organization]).to include(resource: 'OrganizationResource')
+    end
+
+    it 'defines the relationship method on the resource instance' do
+      test_resource_class = Class.new(JPie::Resource) do
+        has_one :user
+      end
+
+      instance = test_resource_class.new(double('model'))
+      expect(instance).to respond_to(:user)
+    end
+  end
+
   describe '#id' do
     it 'returns the object id' do
       expect(resource_instance.id).to eq(model_instance.id)
@@ -166,6 +246,22 @@ RSpec.describe JPie::Resource do
       expect(DerivedResource._meta_attributes).to include(:created_at, :updated_at)
       expect(BaseResource._attributes).to eq([:name])
       expect(BaseResource._meta_attributes).to eq([:created_at])
+    end
+
+    it 'properly inherits relationships from parent class', :aggregate_failures do
+      class BaseResourceWithRel < JPie::Resource
+        has_many :posts
+      end
+
+      class DerivedResourceWithRel < BaseResourceWithRel
+        has_one :user
+      end
+
+      expect(DerivedResourceWithRel._relationships).to include(:posts, :user)
+      expect(DerivedResourceWithRel._relationships[:posts][:resource]).to eq('PostResource')
+      expect(DerivedResourceWithRel._relationships[:user][:resource]).to eq('UserResource')
+      expect(BaseResourceWithRel._relationships).to include(:posts)
+      expect(BaseResourceWithRel._relationships).not_to include(:user)
     end
   end
 end
