@@ -11,23 +11,23 @@ RSpec.describe PostResource do
       user: user
     )
   end
-  let(:resource_instance) { PostResource.new(post_instance) }
+  let(:resource_instance) { described_class.new(post_instance) }
 
   describe '.model' do
     it 'returns the Post model class' do
-      expect(PostResource.model).to eq(Post)
+      expect(described_class.model).to eq(Post)
     end
   end
 
   describe '.type' do
     it 'returns the correct pluralized type' do
-      expect(PostResource.type).to eq('posts')
+      expect(described_class.type).to eq('posts')
     end
   end
 
   describe '.attribute' do
     it 'defines the correct attributes' do
-      expect(PostResource._attributes).to contain_exactly(:title, :content, :user_id, :created_at, :updated_at)
+      expect(described_class._attributes).to contain_exactly(:title, :content, :user_id, :created_at, :updated_at)
     end
   end
 
@@ -52,4 +52,4 @@ RSpec.describe PostResource do
       expect(resource_instance.user_id).to eq(user.id)
     end
   end
-end 
+end

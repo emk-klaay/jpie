@@ -183,7 +183,7 @@ module JPie
 
       # Remove "Controller" suffix and any namespace
       base_name = controller_name.split('::').last.chomp('Controller')
-      
+
       # Convert plural controller name to singular resource name
       # e.g., "Users" -> "User"
       singular_name = base_name.singularize

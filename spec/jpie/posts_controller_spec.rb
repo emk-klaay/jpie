@@ -70,4 +70,4 @@ RSpec.describe 'PostsController' do
       expect(controller).to respond_to(:destroy)
     end
   end
-end 
+end

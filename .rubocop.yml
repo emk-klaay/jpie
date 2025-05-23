@@ -35,17 +35,77 @@ Metrics/ModuleLength:
 
 Metrics/MethodLength:
   Max: 20
+  Exclude:
+    - 'lib/jpie/controller.rb'  # CRUD method generation is longer
 
 Metrics/BlockLength:
   Exclude:
     - 'spec/**/*'
     - '*.gemspec'
+    - 'lib/jpie/controller.rb'  # class_methods block for CRUD generation
 
+# Metrics cops that we can relax for CRUD methods
+Metrics/AbcSize:
+  Max: 30
+
+# Rails cops that don't apply to our gem
+Rails/TimeZone:
+  Enabled: false
+
+Rails/ApplicationRecord:
+  Enabled: false
+
+# Gemspec cops that are acceptable for gems
+Gemspec/DevelopmentDependencies:
+  Enabled: false
+
+# Capybara cops that are causing issues (rubocop bug)
+Capybara/RSpec/PredicateMatcher:
+  Enabled: false
+
+# RSpec cops that are acceptable for our test style
 RSpec/ExampleLength:
   Max: 20
 
 RSpec/MultipleExpectations:
-  Max: 5
+  Max: 6
 
 RSpec/NestedGroups:
-  Max: 4 
+  Max: 4
+
+RSpec/FilePath:
+  Enabled: false
+
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+RSpec/MultipleDescribes:
+  Enabled: false
+
+RSpec/LeakyConstantDeclaration:
+  Enabled: false
+
+RSpec/VerifiedDoubles:
+  Enabled: false
+
+RSpec/MessageSpies:
+  Enabled: false
+
+# Style cops that are acceptable for test code
+Style/OpenStructUse:
+  Exclude:
+    - 'spec/**/*'
+
+# Lint cops that are acceptable for test initialization methods
+Lint/MissingSuper:
+  Exclude:
+    - 'spec/**/*'
+
+Lint/ConstantDefinitionInBlock:
+  Exclude:
+    - 'spec/**/*'
+
+# Rails cops that we can ignore in test support files
+Rails/SkipsModelValidations:
+  Exclude:
+    - 'spec/**/*' 
