@@ -1,18 +1,15 @@
 # AI Assistant Configuration
 # This file contains rules and guidelines for AI assistants working on the jpie project
 
-[code_style]
 # Follow these code style guidelines
 - Follow Ruby style guide and RuboCop rules defined in .rubocop.yml
 - Prefer rubocop autocorrect 
 - Always pass rubocop before committing to git
 
-[documentation]
 # Documentation requirements
 - Keep README.md up to date with installation and usage instructions
 - Include example usage in documentation
 
-[testing]
 # Testing guidelines
 - Write RSpec tests for all new features
 - Maintain test coverage for all public methods
@@ -22,7 +19,6 @@
 - Use modern RSpec features and syntax
 - Don't reduce test coverage (line, file, branch, or other)
 
-[git_workflow]
 # Git commit guidelines
 - Write clear, descriptive commit messages
 - Keep commits focused and atomic
@@ -32,14 +28,12 @@
 - Include Ruby/Rails version requirements in relevant commits
 - Update tests in the same commit as code changes
 
-[project_structure]
 # Maintain the following project structure
 - Keep core functionality in lib/jpie/
 - Place tests in spec/jpie/
 - Use proper namespacing (JPie module)
 - Follow Ruby gem best practices
 
-[dependencies]
 # Dependency management
 - Keep dependencies minimal and justified
 - Document new dependencies in README.md
@@ -48,7 +42,6 @@
 - Only support Rails 8+ features
 - Use modern gem versions
 
-[security]
 # Security guidelines
 - Never commit sensitive data or credentials
 - Use environment variables for configuration
@@ -58,12 +51,15 @@
 - Use Ruby 3.4+ security features
 - Implement proper input validation
 
-[compatibility]
 # Compatibility requirements
 - Maintain Ruby 3.4+ compatibility
 - Support Rails 8+ integration
 - Follow JSON:API specification strictly
 
-[style]
 # Styleguide
 - Use `{data:}` rather than `{data: data}`
+
+# When implementing new features or refactoring
+- Always read the .aiconfig file 
+- Always implement code slowly and methodically 
+- Always test as you go
