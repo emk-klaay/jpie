@@ -242,6 +242,211 @@ class PostResource < JPie::Resource
 end
 ```
 
+### Polymorphic Associations
+
+JPie supports polymorphic associations seamlessly. Here's a complete example with comments that can belong to multiple types of commentable resources:
+
+#### Models with Polymorphic Associations
+
+```ruby
+# Comment model with belongs_to polymorphic association
+class Comment < ActiveRecord::Base
+  belongs_to :commentable, polymorphic: true
+  belongs_to :author, class_name: 'User'
+  
+  validates :content, presence: true
+end
+
+# Post model with has_many polymorphic association
+class Post < ActiveRecord::Base
+  has_many :comments, as: :commentable, dependent: :destroy
+  belongs_to :author, class_name: 'User'
+  
+  validates :title, :content, presence: true
+end
+
+# Article model with has_many polymorphic association  
+class Article < ActiveRecord::Base
+  has_many :comments, as: :commentable, dependent: :destroy
+  belongs_to :author, class_name: 'User'
+  
+  validates :title, :body, presence: true
+end
+```
+
+#### Resources for Polymorphic Associations
+
+```ruby
+# Comment resource with belongs_to polymorphic relationship
+class CommentResource < JPie::Resource
+  attributes :content, :created_at
+  
+  # Polymorphic belongs_to relationship
+  relationship :commentable do
+    # Dynamically determine the resource class based on the commentable type
+    case object.commentable_type
+    when 'Post'
+      PostResource.new(object.commentable, context)
+    when 'Article'
+      ArticleResource.new(object.commentable, context)
+    else
+      nil
+    end
+  end
+  
+  relationship :author do
+    UserResource.new(object.author, context) if object.author
+  end
+end
+
+# Post resource with has_many polymorphic relationship
+class PostResource < JPie::Resource
+  attributes :title, :content, :published_at
+  
+  # Has_many polymorphic relationship
+  relationship :comments do
+    object.comments.map { |comment| CommentResource.new(comment, context) }
+  end
+  
+  relationship :author do
+    UserResource.new(object.author, context) if object.author
+  end
+end
+
+# Article resource with has_many polymorphic relationship
+class ArticleResource < JPie::Resource
+  attributes :title, :body, :published_at
+  
+  # Has_many polymorphic relationship
+  relationship :comments do
+    object.comments.map { |comment| CommentResource.new(comment, context) }
+  end
+  
+  relationship :author do
+    UserResource.new(object.author, context) if object.author
+  end
+end
+```
+
+#### Controllers for Polymorphic Resources
+
+```ruby
+class CommentsController < ApplicationController
+  include JPie::Controller
+  
+  # Override create to handle polymorphic assignment
+  def create
+    attributes = deserialize_params
+    commentable = find_commentable
+    
+    comment = commentable.comments.build(attributes)
+    comment.author = current_user
+    comment.save!
+    
+    render_jsonapi_resource(comment, status: :created)
+  end
+  
+  private
+  
+  def find_commentable
+    # Extract commentable info from request path or parameters
+    if params[:post_id]
+      Post.find(params[:post_id])
+    elsif params[:article_id]
+      Article.find(params[:article_id])
+    else
+      raise ArgumentError, "Commentable not specified"
+    end
+  end
+end
+
+class PostsController < ApplicationController
+  include JPie::Controller
+  # Uses default CRUD operations with polymorphic comments included
+end
+
+class ArticlesController < ApplicationController
+  include JPie::Controller
+  # Uses default CRUD operations with polymorphic comments included
+end
+```
+
+#### Routes for Polymorphic Resources
+
+```ruby
+Rails.application.routes.draw do
+  resources :posts do
+    resources :comments, only: [:index, :create]
+  end
+  
+  resources :articles do
+    resources :comments, only: [:index, :create]
+  end
+  
+  resources :comments, only: [:show, :update, :destroy]
+end
+```
+
+#### Example JSON:API Responses
+
+**GET /posts/1?include=comments,comments.author**
+
+```json
+{
+  "data": {
+    "id": "1",
+    "type": "posts",
+    "attributes": {
+      "title": "My First Post",
+      "content": "This is the content of my first post.",
+      "published_at": "2024-01-15T10:30:00Z"
+    },
+    "relationships": {
+      "comments": {
+        "data": [
+          { "id": "1", "type": "comments" },
+          { "id": "2", "type": "comments" }
+        ]
+      }
+    }
+  },
+  "included": [
+    {
+      "id": "1",
+      "type": "comments",
+      "attributes": {
+        "content": "Great post!",
+        "created_at": "2024-01-15T11:00:00Z"
+      },
+      "relationships": {
+        "commentable": {
+          "data": { "id": "1", "type": "posts" }
+        },
+        "author": {
+          "data": { "id": "5", "type": "users" }
+        }
+      }
+    },
+    {
+      "id": "2", 
+      "type": "comments",
+      "attributes": {
+        "content": "Thanks for sharing!",
+        "created_at": "2024-01-15T12:00:00Z"
+      },
+      "relationships": {
+        "commentable": {
+          "data": { "id": "1", "type": "posts" }
+        },
+        "author": {
+          "data": { "id": "6", "type": "users" }
+        }
+      }
+    }
+  ]
+}
+```
+
 ### Authorization and Scoping
 
 Override the default scope method to add authorization:
