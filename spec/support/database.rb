@@ -23,15 +23,30 @@ ActiveRecord::Schema.define do
     t.integer :user_id
     t.timestamps
   end
+
+  create_table :comments do |t|
+    t.text :content
+    t.integer :user_id
+    t.integer :post_id
+    t.timestamps
+  end
 end
 
 # Define ActiveRecord models
 class User < ActiveRecord::Base
   validates :name, presence: true
   has_many :posts, dependent: :destroy
+  has_many :comments, dependent: :destroy
 end
 
 class Post < ActiveRecord::Base
   belongs_to :user
   validates :title, presence: true
+  has_many :comments, dependent: :destroy
+end
+
+class Comment < ActiveRecord::Base
+  belongs_to :user
+  belongs_to :post
+  validates :content, presence: true
 end
