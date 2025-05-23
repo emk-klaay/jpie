@@ -60,6 +60,9 @@ module JPie
         attributes: serialize_attributes(resource)
       }
 
+      meta_data = serialize_meta(resource)
+      data[:meta] = meta_data if meta_data.any?
+
       data.compact
     end
 
@@ -69,6 +72,14 @@ module JPie
 
       attributes.transform_keys { it.to_s.underscore }
                 .transform_values { serialize_value(it) }
+    end
+
+    def serialize_meta(resource)
+      meta_attributes = resource.meta_hash
+      return {} if meta_attributes.empty?
+
+      meta_attributes.transform_keys { it.to_s.underscore }
+                     .transform_values { serialize_value(it) }
     end
 
     def serialize_value(value)

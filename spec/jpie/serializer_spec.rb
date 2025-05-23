@@ -35,17 +35,26 @@ RSpec.describe JPie::Serializer do
         expect(data[:type]).to eq('users')
       end
 
-      it 'includes the correct attributes' do
+      it 'includes the correct attributes', :aggregate_failures do
         attributes = result[:data][:attributes]
         expect(attributes).to include(
           'name' => 'John Doe',
           'email' => 'john@example.com'
         )
+        expect(attributes).not_to have_key('created_at')
+        expect(attributes).not_to have_key('updated_at')
       end
 
-      it 'formats datetime attributes as ISO8601' do
-        attributes = result[:data][:attributes]
-        expect(attributes['created_at']).to eq('2024-01-01T12:00:00Z')
+      it 'includes meta data with timestamps', :aggregate_failures do
+        expect(result[:data]).to have_key(:meta)
+        meta = result[:data][:meta]
+        expect(meta).to have_key('created_at')
+        expect(meta).to have_key('updated_at')
+      end
+
+      it 'formats datetime meta attributes as ISO8601' do
+        meta = result[:data][:meta]
+        expect(meta['created_at']).to eq('2024-01-01T12:00:00Z')
       end
     end
 
@@ -69,6 +78,14 @@ RSpec.describe JPie::Serializer do
         expect(second_item[:id]).to eq(model_collection.last.id.to_s)
         expect(second_item[:type]).to eq('users')
         expect(second_item[:attributes]['name']).to eq('Jane Smith')
+      end
+
+      it 'includes meta data for each item', :aggregate_failures do
+        result[:data].each do |item|
+          expect(item).to have_key(:meta)
+          expect(item[:meta]).to have_key('created_at')
+          expect(item[:meta]).to have_key('updated_at')
+        end
       end
     end
   end
@@ -104,7 +121,7 @@ RSpec.describe JPie::Serializer do
       expect(result[:data][:attributes][:name]).to be_nil
     end
 
-    it 'handles complex attribute values' do
+    it 'handles complex meta values' do
       user_with_complex_data = User.create!(
         name: 'John',
         email: 'john@example.com',
@@ -112,7 +129,7 @@ RSpec.describe JPie::Serializer do
       )
 
       result = serializer.serialize(user_with_complex_data)
-      expect(result[:data][:attributes]['created_at']).to eq('2024-01-01T12:00:00Z')
+      expect(result[:data][:meta]['created_at']).to eq('2024-01-01T12:00:00Z')
     end
   end
 end

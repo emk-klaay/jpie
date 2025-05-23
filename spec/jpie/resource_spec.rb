@@ -65,7 +65,18 @@ RSpec.describe JPie::Resource do
     end
 
     it 'adds attributes to the _attributes list' do
-      expect(UserResource._attributes).to contain_exactly(:name, :email, :created_at, :updated_at)
+      expect(UserResource._attributes).to contain_exactly(:name, :email)
+    end
+  end
+
+  describe '.meta_attribute' do
+    it 'defines meta attribute methods', :aggregate_failures do
+      expect(resource_instance).to respond_to(:created_at)
+      expect(resource_instance).to respond_to(:updated_at)
+    end
+
+    it 'adds meta attributes to the _meta_attributes list' do
+      expect(UserResource._meta_attributes).to contain_exactly(:created_at, :updated_at)
     end
   end
 
@@ -89,8 +100,19 @@ RSpec.describe JPie::Resource do
         name: 'John Doe',
         email: 'john@example.com'
       )
-      expect(attributes).to have_key(:created_at)
-      expect(attributes).to have_key(:updated_at)
+      expect(attributes).not_to have_key(:created_at)
+      expect(attributes).not_to have_key(:updated_at)
+    end
+  end
+
+  describe '#meta_hash' do
+    it 'returns a hash of all meta attributes', :aggregate_failures do
+      meta = resource_instance.meta_hash
+
+      expect(meta).to have_key(:created_at)
+      expect(meta).to have_key(:updated_at)
+      expect(meta[:created_at]).to be_a(Time)
+      expect(meta[:updated_at]).to be_a(Time)
     end
   end
 
@@ -98,6 +120,13 @@ RSpec.describe JPie::Resource do
     it 'returns the correct attribute values', :aggregate_failures do
       expect(resource_instance.name).to eq('John Doe')
       expect(resource_instance.email).to eq('john@example.com')
+    end
+  end
+
+  describe 'meta attribute access' do
+    it 'returns the correct meta attribute values', :aggregate_failures do
+      expect(resource_instance.created_at).to be_a(Time)
+      expect(resource_instance.updated_at).to be_a(Time)
     end
   end
 
@@ -125,14 +154,18 @@ RSpec.describe JPie::Resource do
     it 'properly inherits attributes from parent class', :aggregate_failures do
       class BaseResource < JPie::Resource
         attributes :name
+        meta_attributes :created_at
       end
 
       class DerivedResource < BaseResource
         attributes :email
+        meta_attributes :updated_at
       end
 
       expect(DerivedResource._attributes).to include(:name, :email)
+      expect(DerivedResource._meta_attributes).to include(:created_at, :updated_at)
       expect(BaseResource._attributes).to eq([:name])
+      expect(BaseResource._meta_attributes).to eq([:created_at])
     end
   end
 end

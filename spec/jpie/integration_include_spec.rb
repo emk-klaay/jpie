@@ -107,8 +107,8 @@ RSpec.describe JPie do
         result[:included].each do |included_post|
           expect(included_post[:type]).to eq('posts')
 
-          # PostResource defines: title, content, created_at, updated_at
-          expected_attributes = %w[title content created_at updated_at]
+          # PostResource defines: title, content (attributes) + created_at, updated_at (meta)
+          expected_attributes = %w[title content]
           actual_attributes = included_post[:attributes].keys
 
           expect(actual_attributes).to include(*expected_attributes)
@@ -116,12 +116,15 @@ RSpec.describe JPie do
           # Verify attribute values are present and correct
           expect(included_post[:attributes]['title']).to be_a(String)
           expect(included_post[:attributes]['content']).to be_a(String)
-          expect(included_post[:attributes]['created_at']).to be_a(String)
-          expect(included_post[:attributes]['updated_at']).to be_a(String)
+
+          # Verify meta attributes
+          expect(included_post).to have_key(:meta)
+          expect(included_post[:meta]).to have_key('created_at')
+          expect(included_post[:meta]).to have_key('updated_at')
 
           # Verify timestamps are in ISO8601 format
-          expect(included_post[:attributes]['created_at']).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
-          expect(included_post[:attributes]['updated_at']).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+          expect(included_post[:meta]['created_at']).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+          expect(included_post[:meta]['updated_at']).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
         end
       end
 
@@ -197,8 +200,8 @@ RSpec.describe JPie do
         result[:included].each do |included_post|
           expect(included_post[:type]).to eq('posts')
 
-          # PostResource defines: title, content, created_at, updated_at
-          expected_attributes = %w[title content created_at updated_at]
+          # PostResource defines: title, content (attributes) + created_at, updated_at (meta)
+          expected_attributes = %w[title content]
           actual_attributes = included_post[:attributes].keys
 
           expect(actual_attributes).to include(*expected_attributes)
@@ -206,8 +209,11 @@ RSpec.describe JPie do
           # Verify all attributes have appropriate values
           expect(included_post[:attributes]['title']).to be_a(String)
           expect(included_post[:attributes]['content']).to be_a(String)
-          expect(included_post[:attributes]['created_at']).to be_a(String)
-          expect(included_post[:attributes]['updated_at']).to be_a(String)
+
+          # Verify meta attributes
+          expect(included_post).to have_key(:meta)
+          expect(included_post[:meta]).to have_key('created_at')
+          expect(included_post[:meta]).to have_key('updated_at')
         end
       end
     end
@@ -253,7 +259,7 @@ RSpec.describe JPie do
         expect(result[:data][:id]).to eq(first_post.id.to_s)
         expect(result[:data][:type]).to eq('posts')
 
-        # Verify included user data
+        # Verify included user data structure
         expect(result).to have_key(:included)
         expect(result[:included]).to be_an(Array)
         expect(result[:included].length).to eq(1)
@@ -261,9 +267,17 @@ RSpec.describe JPie do
         included_user = result[:included].first
         expect(included_user[:type]).to eq('users')
         expect(included_user[:id]).to eq(user.id.to_s)
+      end
 
-        # UserResource defines: name, email, created_at, updated_at
-        expected_attributes = %w[name email created_at updated_at]
+      it 'includes correct user attributes and meta data', :aggregate_failures do
+        posts_controller.params = { id: first_post.id.to_s, include: 'user' }
+        posts_controller.show
+
+        result = posts_controller.last_render[:json]
+        included_user = result[:included].first
+
+        # UserResource defines: name, email (attributes) + created_at, updated_at (meta)
+        expected_attributes = %w[name email]
         actual_attributes = included_user[:attributes].keys
 
         expect(actual_attributes).to include(*expected_attributes)
@@ -271,12 +285,15 @@ RSpec.describe JPie do
         # Verify attribute values
         expect(included_user[:attributes]['name']).to eq('John Doe')
         expect(included_user[:attributes]['email']).to eq('john@example.com')
-        expect(included_user[:attributes]['created_at']).to be_a(String)
-        expect(included_user[:attributes]['updated_at']).to be_a(String)
+
+        # Verify meta attributes
+        expect(included_user).to have_key(:meta)
+        expect(included_user[:meta]).to have_key('created_at')
+        expect(included_user[:meta]).to have_key('updated_at')
 
         # Verify timestamps are in ISO8601 format
-        expect(included_user[:attributes]['created_at']).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
-        expect(included_user[:attributes]['updated_at']).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+        expect(included_user[:meta]['created_at']).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
+        expect(included_user[:meta]['updated_at']).to match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/)
       end
     end
   end

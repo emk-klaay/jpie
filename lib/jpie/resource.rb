@@ -4,15 +4,17 @@ module JPie
   class Resource
     include ActiveSupport::Configurable
 
-    class_attribute :_type, :_attributes, :_model_class, :_relationships
+    class_attribute :_type, :_attributes, :_model_class, :_relationships, :_meta_attributes
     self._attributes = []
     self._relationships = {}
+    self._meta_attributes = []
 
     class << self
       def inherited(subclass)
         super
         subclass._attributes = _attributes.dup
         subclass._relationships = _relationships.dup
+        subclass._meta_attributes = _meta_attributes.dup
       end
 
       def model(model_class = nil)
@@ -47,6 +49,24 @@ module JPie
 
       def attributes(*names)
         names.each { attribute(it) }
+      end
+
+      def meta_attribute(name, options = {})
+        name = name.to_sym
+        _meta_attributes << name unless _meta_attributes.include?(name)
+
+        define_method(name) do
+          if options[:block]
+            instance_exec(&options[:block])
+          else
+            attr_name = options[:attr] || name
+            @object.public_send(attr_name)
+          end
+        end
+      end
+
+      def meta_attributes(*names)
+        names.each { meta_attribute(it) }
       end
 
       def relationship(name, options = {})
@@ -85,6 +105,12 @@ module JPie
 
     def attributes_hash
       self.class._attributes.index_with do
+        public_send(it)
+      end
+    end
+
+    def meta_hash
+      self.class._meta_attributes.index_with do
         public_send(it)
       end
     end
