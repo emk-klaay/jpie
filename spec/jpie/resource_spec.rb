@@ -276,4 +276,44 @@ RSpec.describe JPie::Resource do
       expect(BaseResourceWithRel._relationships).not_to include(:user)
     end
   end
+
+  describe '.scope' do
+    it 'returns all records by default' do
+      allow(User).to receive(:all).and_return('all_users')
+      expect(UserResource.scope).to eq('all_users')
+    end
+
+    it 'accepts a context parameter without error' do
+      context = { current_user: double('user') }
+      allow(User).to receive(:all).and_return('all_users')
+      expect(UserResource.scope(context)).to eq('all_users')
+    end
+
+    it 'can be overridden for authorization' do
+      test_resource_class = Class.new(JPie::Resource) do
+        model User
+
+        def self.scope(context = {})
+          current_user = context[:current_user]
+          return model.none unless current_user&.admin?
+
+          model.all
+        end
+      end
+
+      # Test with no user
+      expect(test_resource_class.scope).to eq(User.none)
+
+      # Test with non-admin user
+      user = double('user', admin?: false)
+      context = { current_user: user }
+      expect(test_resource_class.scope(context)).to eq(User.none)
+
+      # Test with admin user
+      admin_user = double('admin_user', admin?: true)
+      admin_context = { current_user: admin_user }
+      allow(User).to receive(:all).and_return('admin_access')
+      expect(test_resource_class.scope(admin_context)).to eq('admin_access')
+    end
+  end
 end

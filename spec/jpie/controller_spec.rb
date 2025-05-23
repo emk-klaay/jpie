@@ -60,24 +60,12 @@ RSpec.describe JPie::Controller do
     test_record
   end
 
-  describe 'automatic CRUD methods' do
-    it 'defines index method' do
+  describe 'CRUD methods' do
+    it 'defines all CRUD methods', :aggregate_failures do
       expect(controller).to respond_to(:index)
-    end
-
-    it 'defines show method' do
       expect(controller).to respond_to(:show)
-    end
-
-    it 'defines create method' do
       expect(controller).to respond_to(:create)
-    end
-
-    it 'defines update method' do
       expect(controller).to respond_to(:update)
-    end
-
-    it 'defines destroy method' do
       expect(controller).to respond_to(:destroy)
     end
   end
@@ -324,6 +312,110 @@ RSpec.describe JPie::Controller do
 
       # Should not raise an error, just won't have resource methods
       expect { unknown_controller_class.new }.not_to raise_error
+    end
+  end
+
+  describe 'resource scoping' do
+    let(:scoped_controller_class) do
+      Class.new(ApplicationController) do
+        include JPie::Controller
+
+        def self.name
+          'ScopedUsersController'
+        end
+
+        # Override to return a test resource class with custom scoping
+        def resource_class
+          @resource_class ||= Class.new(JPie::Resource) do
+            model User
+
+            def self.scope(context = {})
+              current_user = context[:current_user]
+              if current_user&.admin?
+                model.all
+              else
+                model.where(active: true)
+              end
+            end
+
+            def self.name
+              'ScopedUserResource'
+            end
+          end
+        end
+
+        attr_accessor :params, :request, :response
+
+        def initialize
+          @params = {}
+          @request = MockRequest.new
+          @response = MockResponse.new
+        end
+
+        def render(options = {})
+          @last_render = options
+        end
+
+        def action_name
+          'test'
+        end
+
+        attr_reader :last_render
+      end
+    end
+
+    let(:scoped_controller) { scoped_controller_class.new }
+
+    it 'uses resource scope for index action' do
+      # Mock the scoped query
+      scoped_relation = double('scoped_relation')
+      expected_context = { current_user: nil, controller: scoped_controller, action: 'test' }
+      expect(scoped_controller.resource_class).to receive(:scope).with(expected_context).and_return(scoped_relation)
+      expect(scoped_controller).to receive(:render_jsonapi_resources).with(scoped_relation)
+
+      scoped_controller.index
+    end
+
+    it 'uses resource scope for show action' do
+      scoped_controller.params[:id] = '123'
+      scoped_relation = double('scoped_relation')
+      record = double('record')
+      expected_context = { current_user: nil, controller: scoped_controller, action: 'test' }
+
+      expect(scoped_controller.resource_class).to receive(:scope).with(expected_context).and_return(scoped_relation)
+      expect(scoped_relation).to receive(:find).with('123').and_return(record)
+      expect(scoped_controller).to receive(:render_jsonapi_resource).with(record)
+
+      scoped_controller.show
+    end
+
+    it 'uses resource scope for update action' do
+      scoped_controller.params[:id] = '123'
+      scoped_relation = double('scoped_relation')
+      record = double('record')
+      expected_context = { current_user: nil, controller: scoped_controller, action: 'test' }
+
+      expect(scoped_controller.resource_class).to receive(:scope).with(expected_context).and_return(scoped_relation)
+      expect(scoped_relation).to receive(:find).with('123').and_return(record)
+      expect(scoped_controller).to receive(:deserialize_params).and_return({})
+      expect(record).to receive(:update!).with({})
+      expect(scoped_controller).to receive(:render_jsonapi_resource).with(record)
+
+      scoped_controller.update
+    end
+
+    it 'uses resource scope for destroy action' do
+      scoped_controller.params[:id] = '123'
+      scoped_relation = double('scoped_relation')
+      record = double('record')
+      expected_context = { current_user: nil, controller: scoped_controller, action: 'test' }
+
+      expect(scoped_controller.resource_class).to receive(:scope).with(expected_context).and_return(scoped_relation)
+      expect(scoped_relation).to receive(:find).with('123').and_return(record)
+      expect(record).to receive(:destroy!)
+      expect(scoped_controller).to receive(:head).with(:no_content)
+
+      scoped_controller.destroy
     end
   end
 end

@@ -91,6 +91,23 @@ module JPie
         relationship(name, { resource: resource_class_name }.merge(options))
       end
 
+      # Default scope method that returns all records
+      # Override this in your resource classes to provide authorization scoping
+      # Example:
+      #   def self.scope(context)
+      #     current_user = context[:current_user]
+      #     return model.none unless current_user
+      #
+      #     if current_user.admin?
+      #       model.all
+      #     else
+      #       model.where(user: current_user)
+      #     end
+      #   end
+      def scope(_context = {})
+        model.all
+      end
+
       private
 
       def infer_model_class

@@ -32,49 +32,47 @@ module JPie
       end
 
       def define_automatic_crud_methods(resource_class)
-        model_class = resource_class.model
-
-        define_index_method(model_class)
-        define_show_method(model_class)
-        define_create_method(model_class)
-        define_update_method(model_class)
-        define_destroy_method(model_class)
+        define_index_method(resource_class)
+        define_show_method(resource_class)
+        define_create_method(resource_class)
+        define_update_method(resource_class)
+        define_destroy_method(resource_class)
       end
 
-      def define_index_method(model_class)
+      def define_index_method(resource_class)
         define_method :index do
-          resources = model_class.all
+          resources = resource_class.scope(context)
           render_jsonapi_resources(resources)
         end
       end
 
-      def define_show_method(model_class)
+      def define_show_method(resource_class)
         define_method :show do
-          resource = model_class.find(params[:id])
+          resource = resource_class.scope(context).find(params[:id])
           render_jsonapi_resource(resource)
         end
       end
 
-      def define_create_method(model_class)
+      def define_create_method(resource_class)
         define_method :create do
           attributes = deserialize_params
-          resource = model_class.create!(attributes)
+          resource = resource_class.model.create!(attributes)
           render_jsonapi_resource(resource, status: :created)
         end
       end
 
-      def define_update_method(model_class)
+      def define_update_method(resource_class)
         define_method :update do
-          resource = model_class.find(params[:id])
+          resource = resource_class.scope(context).find(params[:id])
           attributes = deserialize_params
           resource.update!(attributes)
           render_jsonapi_resource(resource)
         end
       end
 
-      def define_destroy_method(model_class)
+      def define_destroy_method(resource_class)
         define_method :destroy do
-          resource = model_class.find(params[:id])
+          resource = resource_class.scope(context).find(params[:id])
           resource.destroy!
           head :no_content
         end
@@ -83,12 +81,12 @@ module JPie
 
     # These methods can still be called manually or used to override defaults
     def index
-      resources = model_class.all
+      resources = resource_class.scope(context)
       render_jsonapi_resources(resources)
     end
 
     def show
-      resource = model_class.find(params[:id])
+      resource = resource_class.scope(context).find(params[:id])
       render_jsonapi_resource(resource)
     end
 
@@ -99,14 +97,14 @@ module JPie
     end
 
     def update
-      resource = model_class.find(params[:id])
+      resource = resource_class.scope(context).find(params[:id])
       attributes = deserialize_params
       resource.update!(attributes)
       render_jsonapi_resource(resource)
     end
 
     def destroy
-      resource = model_class.find(params[:id])
+      resource = resource_class.scope(context).find(params[:id])
       resource.destroy!
       head :no_content
     end
