@@ -3,25 +3,10 @@
 require 'spec_helper'
 
 RSpec.describe JPie::Serializer do
-  # Mock model and resource for testing
-  let(:mock_model) do
-    Class.new do
-      attr_accessor :id, :name, :email, :created_at
-
-      def initialize(attributes = {})
-        attributes.each { |key, value| public_send("#{key}=", value) }
-      end
-
-      def self.model_name
-        OpenStruct.new(plural: 'users')
-      end
-    end
-  end
-
+  # Test resource using the ActiveRecord User model from database.rb
   let(:test_resource_class) do
-    model_class = mock_model
     Class.new(JPie::Resource) do
-      model model_class
+      model User
       attributes :name, :email
       attribute :created_at
     end
@@ -30,8 +15,7 @@ RSpec.describe JPie::Serializer do
   let(:serializer) { described_class.new(test_resource_class) }
 
   let(:model_instance) do
-    mock_model.new(
-      id: 1,
+    User.create!(
       name: 'John Doe',
       email: 'john@example.com',
       created_at: Time.parse('2024-01-01T12:00:00Z')
@@ -40,8 +24,8 @@ RSpec.describe JPie::Serializer do
 
   let(:model_collection) do
     [
-      mock_model.new(id: 1, name: 'John Doe', email: 'john@example.com'),
-      mock_model.new(id: 2, name: 'Jane Smith', email: 'jane@example.com')
+      User.create!(name: 'John Doe', email: 'john@example.com'),
+      User.create!(name: 'Jane Smith', email: 'jane@example.com')
     ]
   end
 
@@ -56,7 +40,7 @@ RSpec.describe JPie::Serializer do
 
       it 'includes the correct id and type' do
         data = result[:data]
-        expect(data[:id]).to eq('1')
+        expect(data[:id]).to eq(model_instance.id.to_s)
         expect(data[:type]).to eq('users')
       end
 
@@ -85,12 +69,13 @@ RSpec.describe JPie::Serializer do
 
       it 'includes correct data for each item' do
         first_item = result[:data].first
-        expect(first_item[:id]).to eq('1')
+        second_item = result[:data].last
+        
+        expect(first_item[:id]).to eq(model_collection.first.id.to_s)
         expect(first_item[:type]).to eq('users')
         expect(first_item[:attributes]['name']).to eq('John Doe')
 
-        second_item = result[:data].last
-        expect(second_item[:id]).to eq('2')
+        expect(second_item[:id]).to eq(model_collection.last.id.to_s)
         expect(second_item[:type]).to eq('users')
         expect(second_item[:attributes]['name']).to eq('Jane Smith')
       end
@@ -163,15 +148,16 @@ RSpec.describe JPie::Serializer do
 
   describe 'attribute formatting' do
     it 'handles nil attribute values' do
-      user_with_nil = mock_model.new(id: 1, name: nil, email: 'test@example.com')
+      # Create user with valid name, then update to nil to test nil handling
+      user_with_nil = User.create!(name: 'temp', email: 'test@example.com')
+      user_with_nil.update_attribute(:name, nil)
       result = serializer.serialize(user_with_nil)
 
       expect(result[:data][:attributes][:name]).to be_nil
     end
 
     it 'handles complex attribute values' do
-      user_with_complex_data = mock_model.new(
-        id: 1,
+      user_with_complex_data = User.create!(
         name: 'John',
         email: 'john@example.com',
         created_at: Time.parse('2024-01-01T12:00:00Z')

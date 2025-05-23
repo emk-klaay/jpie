@@ -3,44 +3,26 @@
 require 'spec_helper'
 
 RSpec.describe JPie::Resource do
-  # Mock model for testing
-  let(:mock_model) do
-    Class.new do
-      attr_accessor :id, :name, :email, :created_at
-
-      def initialize(attributes = {})
-        attributes.each { |key, value| public_send("#{key}=", value) }
-      end
-
-      def self.model_name
-        OpenStruct.new(plural: 'users')
-      end
-    end
-  end
-
+  # Test resource using the ActiveRecord User model from database.rb
   let(:test_resource_class) do
-    model_class = mock_model
-    Class.new(described_class) do
-      model model_class
+    Class.new(JPie::Resource) do
+      model User
       attributes :name, :email
-      attribute :created_at
     end
   end
 
   let(:model_instance) do
-    mock_model.new(
-      id: 1,
+    User.create!(
       name: 'John Doe',
-      email: 'john@example.com',
-      created_at: Time.parse('2024-01-01T12:00:00Z')
+      email: 'john@example.com'
     )
   end
 
   let(:resource_instance) { test_resource_class.new(model_instance) }
 
   describe '.model' do
-    it 'sets and gets the model class' do
-      expect(test_resource_class.model).to eq(mock_model)
+    it 'returns the configured model class' do
+      expect(test_resource_class.model).to eq(User)
     end
 
     it 'infers model class from resource name when not explicitly set' do
@@ -49,16 +31,16 @@ RSpec.describe JPie::Resource do
       end
 
       # The implementation will try to constantize 'Test' from 'TestResource'
-      # Since TestModel exists (defined in controller_spec.rb), it should be found
+      # Since TestModel exists (defined in database.rb), it should be found
       expect(TestResource.model).to eq(TestModel)
     end
 
-    it 'returns nil when model cannot be inferred' do
+    it 'falls back to nil when model cannot be inferred' do
       class UnknownResource < JPie::Resource
-        # No explicit model set and can't be inferred
+        # No explicit model set, and 'Unknown' class doesn't exist
       end
 
-      expect(UnknownResource.send(:infer_model_class)).to be_nil
+      expect(UnknownResource.model).to be_nil
     end
   end
 
@@ -88,17 +70,16 @@ RSpec.describe JPie::Resource do
     it 'defines attribute methods' do
       expect(resource_instance).to respond_to(:name)
       expect(resource_instance).to respond_to(:email)
-      expect(resource_instance).to respond_to(:created_at)
     end
 
     it 'adds attributes to the _attributes list' do
-      expect(test_resource_class._attributes).to contain_exactly(:name, :email, :created_at)
+      expect(test_resource_class._attributes).to contain_exactly(:name, :email)
     end
   end
 
   describe '#id' do
     it 'returns the object id' do
-      expect(resource_instance.id).to eq(1)
+      expect(resource_instance.id).to eq(model_instance.id)
     end
   end
 
@@ -114,8 +95,7 @@ RSpec.describe JPie::Resource do
 
       expect(attributes).to eq({
                                  name: 'John Doe',
-                                 email: 'john@example.com',
-                                 created_at: Time.parse('2024-01-01T12:00:00Z')
+                                 email: 'john@example.com'
                                })
     end
   end
@@ -124,7 +104,6 @@ RSpec.describe JPie::Resource do
     it 'returns the correct attribute values' do
       expect(resource_instance.name).to eq('John Doe')
       expect(resource_instance.email).to eq('john@example.com')
-      expect(resource_instance.created_at).to eq(Time.parse('2024-01-01T12:00:00Z'))
     end
   end
 

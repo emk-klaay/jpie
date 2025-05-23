@@ -5,47 +5,10 @@ require 'rails'
 require 'action_controller'
 require 'active_record'
 
-# Mock Rails environment
+# Mock controller for testing
 class ApplicationController < ActionController::Base; end
 
-# Mock model for testing
-class TestModel
-  attr_accessor :id, :name, :email
-
-  def self.all
-    [new(id: 1, name: 'John', email: 'john@example.com')]
-  end
-
-  def self.find(id)
-    new(id: id, name: 'John', email: 'john@example.com')
-  end
-
-  def self.create!(attributes)
-    instance = new
-    attributes.each { |key, value| instance.send("#{key}=", value) }
-    instance.id = 1
-    instance
-  end
-
-  def self.model_name
-    OpenStruct.new(plural: 'test_models')
-  end
-
-  def update!(attributes)
-    attributes.each { |key, value| send("#{key}=", value) }
-    self
-  end
-
-  def destroy!
-    true
-  end
-
-  def initialize(attributes = {})
-    attributes.each { |key, value| send("#{key}=", value) }
-  end
-end
-
-# Mock resource for testing
+# Mock resource for testing - uses the ActiveRecord TestModel from database.rb
 class TestResource < JPie::Resource
   model TestModel
   attributes :name, :email
@@ -83,6 +46,7 @@ RSpec.describe JPie::Controller do
   end
 
   let(:controller) { controller_class.new }
+  let(:test_record) { TestModel.create!(name: 'John', email: 'john@example.com') }
 
   before do
     # Define mock classes
@@ -99,6 +63,9 @@ RSpec.describe JPie::Controller do
     end)
 
     stub_const('MockResponse', Class.new)
+
+    # Ensure test record is created
+    test_record
   end
 
   describe 'automatic CRUD methods' do
@@ -135,7 +102,7 @@ RSpec.describe JPie::Controller do
 
   describe '#show' do
     it 'renders a single resource' do
-      controller.params = { id: '1' }
+      controller.params = { id: test_record.id.to_s }
       controller.show
 
       expect(controller.last_render[:json]).to have_key(:data)
@@ -146,7 +113,7 @@ RSpec.describe JPie::Controller do
 
   describe '#destroy' do
     it 'returns no content status' do
-      controller.params = { id: '1' }
+      controller.params = { id: test_record.id.to_s }
       controller.destroy
 
       expect(controller.last_head).to eq(:no_content)

@@ -16,6 +16,9 @@ end
 require 'jpie'
 require 'ostruct'
 
+# Set up ActiveRecord database
+require_relative 'support/database'
+
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|
     expectations.include_chain_clauses_in_custom_matcher_descriptions = true
@@ -35,4 +38,13 @@ RSpec.configure do |config|
   config.profile_examples = 10
   config.order = :random
   Kernel.srand config.seed
+
+  # Clean database between tests
+  config.before(:each) do
+    ActiveRecord::Base.connection.tables.each do |table|
+      next if table == 'schema_migrations'
+
+      ActiveRecord::Base.connection.execute("DELETE FROM #{table}")
+    end
+  end
 end

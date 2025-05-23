@@ -3,18 +3,10 @@
 require 'spec_helper'
 
 RSpec.describe JPie::Deserializer do
-  let(:mock_model) do
-    Class.new do
-      def self.model_name
-        OpenStruct.new(plural: 'users')
-      end
-    end
-  end
-
+  # Test resource using the ActiveRecord User model from database.rb
   let(:test_resource_class) do
-    model_class = mock_model
     Class.new(JPie::Resource) do
-      model model_class
+      model User
       attributes :name, :email
       attribute :created_at
     end
