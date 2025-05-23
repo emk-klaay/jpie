@@ -41,16 +41,28 @@ module JPie
 
       validate_type!(type) if type
 
-      # Transform keys back to model format (underscore is already the model format)
-      model_attributes = attributes.transform_keys { it.to_s.underscore }
+      model_attributes = transform_attribute_keys(attributes)
+      filtered_attributes = filter_allowed_attributes(model_attributes)
+      result = deserialize_attribute_values(filtered_attributes)
 
-      # Only include attributes that are defined in the resource class
+      add_id_if_present(result, id)
+    end
+
+    def transform_attribute_keys(attributes)
+      attributes.transform_keys { it.to_s.underscore }
+    end
+
+    def filter_allowed_attributes(model_attributes)
       allowed_attributes = resource_class._attributes.map(&:to_s)
-      filtered_attributes = model_attributes.slice(*allowed_attributes)
+      model_attributes.slice(*allowed_attributes)
+    end
 
-      result = filtered_attributes.transform_values { deserialize_value(it) }
+    def deserialize_attribute_values(attributes)
+      attributes.transform_values { deserialize_value(it) }
+    end
+
+    def add_id_if_present(result, id)
       result['id'] = id if id
-
       result.with_indifferent_access
     end
 
