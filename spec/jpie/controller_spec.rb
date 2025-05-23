@@ -158,4 +158,121 @@ RSpec.describe JPie::Controller do
       expect(controller.send(:model_class)).to eq(TestModel)
     end
   end
+
+  describe 'error handling' do
+    before do
+      # Mock ActiveRecord errors for testing
+      stub_const('ActiveRecord::RecordNotFound', Class.new(StandardError))
+      stub_const('ActiveRecord::RecordInvalid', Class.new(StandardError) do
+        attr_reader :record
+        
+        def initialize(record = nil)
+          mock_record = OpenStruct.new(errors: OpenStruct.new(full_messages: ['Test error']))
+          @record = record || mock_record
+          super('Invalid record')
+        end
+      end)
+    end
+
+    describe 'rescue_from handlers' do
+      let(:controller_with_errors) do
+        Class.new(ApplicationController) do
+          include JPie::Controller
+          jsonapi_resource TestResource
+
+          def initialize
+            @params = {}
+            @request = MockRequest.new
+            @response = MockResponse.new
+          end
+
+          def render(options = {})
+            @last_render = options
+          end
+
+          def action_name
+            'test'
+          end
+
+          attr_reader :last_render
+        end.new
+      end
+
+      it 'handles ActiveRecord::RecordNotFound' do
+        controller_with_errors.send(:render_not_found_error, ActiveRecord::RecordNotFound.new('Not found'))
+        
+        expect(controller_with_errors.last_render[:json]).to have_key(:errors)
+        expect(controller_with_errors.last_render[:status]).to eq(404)
+      end
+
+      it 'handles ActiveRecord::RecordInvalid' do
+        invalid_error = ActiveRecord::RecordInvalid.new
+        controller_with_errors.send(:render_validation_error, invalid_error)
+        
+        expect(controller_with_errors.last_render[:json]).to have_key(:errors)
+        expect(controller_with_errors.last_render[:status]).to eq(:unprocessable_entity)
+      end
+
+      it 'handles JPie::Errors::Error' do
+        jpie_error = JPie::Errors::BadRequestError.new(detail: 'Bad request')
+        controller_with_errors.send(:render_jsonapi_error, jpie_error)
+        
+        expect(controller_with_errors.last_render[:json]).to have_key(:errors)
+        expect(controller_with_errors.last_render[:status]).to eq(400)
+      end
+    end
+  end
+
+  describe 'context building' do
+    it 'builds context with controller and action' do
+      context = controller.send(:context)
+      expect(context[:controller]).to eq(controller)
+      expect(context[:action]).to eq('test')
+    end
+
+    it 'includes current_user when available' do
+      allow(controller).to receive(:try).with(:current_user).and_return('user')
+      context = controller.send(:context)
+      expect(context[:current_user]).to eq('user')
+    end
+  end
+
+  describe 'parameter deserialization' do
+    it 'deserializes valid JSON' do
+      mock_body = double('body')
+      allow(mock_body).to receive(:read).and_return('{"data": {"type": "test_models", "attributes": {"name": "test"}}}')
+      
+      mock_request = double('request', body: mock_body)
+      controller.request = mock_request
+      
+      result = controller.send(:deserialize_params)
+      expect(result).to have_key('name')
+    end
+
+    it 'raises error for invalid JSON' do
+      mock_body = double('body')
+      allow(mock_body).to receive(:read).and_return('invalid json')
+      
+      mock_request = double('request', body: mock_body)
+      controller.request = mock_request
+      
+      expect { controller.send(:deserialize_params) }.to raise_error(JPie::Errors::BadRequestError)
+    end
+  end
+
+  describe 'rendering with meta' do
+    it 'includes meta in single resource response' do
+      controller.send(:render_jsonapi_resource, TestModel.new, meta: { total: 1 })
+      
+      expect(controller.last_render[:json]).to have_key(:meta)
+      expect(controller.last_render[:json][:meta]).to eq({ total: 1 })
+    end
+
+    it 'includes meta in collection response' do
+      controller.send(:render_jsonapi_resources, [TestModel.new], meta: { total: 1 })
+      
+      expect(controller.last_render[:json]).to have_key(:meta)
+      expect(controller.last_render[:json][:meta]).to eq({ total: 1 })
+    end
+  end
 end 
