@@ -191,11 +191,6 @@ module JPie
 
       # Try to constantize the resource class
       resource_class_name.constantize
-    rescue NameError
-      raise StandardError.new(
-        "Unable to infer resource class '#{resource_class_name}' for #{controller_name}. " \
-        "Either define #{resource_class_name} or use jsonapi_resource to specify the resource class."
-      )
     end
   end
 end
