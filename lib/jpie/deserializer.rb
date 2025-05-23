@@ -41,8 +41,8 @@ module JPie
 
       validate_type!(type) if type
 
-      # Transform keys back to model format
-      model_attributes = attributes.transform_keys { unformat_key(it) }
+      # Transform keys back to model format (underscore is already the model format)
+      model_attributes = attributes.transform_keys { it.to_s.underscore }
 
       # Only include attributes that are defined in the resource class
       allowed_attributes = resource_class._attributes.map(&:to_s)
@@ -72,15 +72,6 @@ module JPie
       end
     end
 
-    def unformat_key(key)
-      case JPie.configuration.json_key_format
-      when :dasherized, :camelized
-        key.to_s.underscore
-      else
-        key.to_s
-      end
-    end
-
     def validate_json_api_structure!(data)
       return if data.is_a?(Hash) && data.key?('data')
 
@@ -96,25 +87,12 @@ module JPie
     end
 
     def validate_type!(type)
-      expected_type = format_type(resource_class.type)
+      expected_type = resource_class.type
       return if type == expected_type
 
       raise Errors::BadRequestError.new(
         detail: "Expected type '#{expected_type}', got '#{type}'"
       )
-    end
-
-    def format_type(type)
-      case JPie.configuration.json_key_format
-      when :dasherized
-        type.to_s.dasherize
-      when :underscored
-        type.to_s.underscore
-      when :camelized
-        type.to_s.camelize(:lower)
-      else
-        type.to_s
-      end
     end
   end
 end

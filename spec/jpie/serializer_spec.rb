@@ -54,7 +54,7 @@ RSpec.describe JPie::Serializer do
 
       it 'formats datetime attributes as ISO8601' do
         attributes = result[:data][:attributes]
-        expect(attributes['created-at']).to eq('2024-01-01T12:00:00Z')
+        expect(attributes['created_at']).to eq('2024-01-01T12:00:00Z')
       end
     end
 
@@ -78,49 +78,6 @@ RSpec.describe JPie::Serializer do
         expect(second_item[:id]).to eq(model_collection.last.id.to_s)
         expect(second_item[:type]).to eq('users')
         expect(second_item[:attributes]['name']).to eq('Jane Smith')
-      end
-    end
-
-    context 'with different key formats' do
-      before do
-        JPie.configure { |config| config.json_key_format = key_format }
-      end
-
-      after do
-        JPie.configure { |config| config.json_key_format = :dasherized }
-      end
-
-      context 'when configured for dasherized keys' do
-        let(:key_format) { :dasherized }
-        let(:result) { serializer.serialize(model_instance) }
-
-        it 'uses dasherized keys' do
-          attributes = result[:data][:attributes]
-          expect(attributes).to have_key('created-at')
-          expect(attributes).not_to have_key('created_at')
-        end
-      end
-
-      context 'when configured for underscored keys' do
-        let(:key_format) { :underscored }
-        let(:result) { serializer.serialize(model_instance) }
-
-        it 'uses underscored keys' do
-          attributes = result[:data][:attributes]
-          expect(attributes).to have_key('created_at')
-          expect(attributes).not_to have_key('created-at')
-        end
-      end
-
-      context 'when configured for camelized keys' do
-        let(:key_format) { :camelized }
-        let(:result) { serializer.serialize(model_instance) }
-
-        it 'uses camelized keys' do
-          attributes = result[:data][:attributes]
-          expect(attributes).to have_key('createdAt')
-          expect(attributes).not_to have_key('created_at')
-        end
       end
     end
   end
@@ -164,7 +121,7 @@ RSpec.describe JPie::Serializer do
       )
 
       result = serializer.serialize(user_with_complex_data)
-      expect(result[:data][:attributes]['created-at']).to eq('2024-01-01T12:00:00Z')
+      expect(result[:data][:attributes]['created_at']).to eq('2024-01-01T12:00:00Z')
     end
   end
 end

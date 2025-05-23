@@ -38,7 +38,7 @@ module JPie
     def serialize_resource_data(resource)
       data = {
         id: resource.id.to_s,
-        type: format_key(resource.type),
+        type: resource.type,
         attributes: serialize_attributes(resource)
       }
 
@@ -49,25 +49,12 @@ module JPie
       attributes = resource.attributes_hash
       return {} if attributes.empty?
 
-      attributes.transform_keys { format_key(it) }
+      attributes.transform_keys { it.to_s.underscore }
                 .transform_values { serialize_value(it) }
     end
 
     def serialize_value(value)
       value.respond_to?(:iso8601) ? value.iso8601 : value
-    end
-
-    def format_key(key)
-      case JPie.configuration.json_key_format
-      when :dasherized
-        key.to_s.dasherize
-      when :underscored
-        key.to_s.underscore
-      when :camelized
-        key.to_s.camelize(:lower)
-      else
-        key.to_s
-      end
     end
   end
 end
