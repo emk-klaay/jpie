@@ -139,4 +139,46 @@ RSpec.describe JPie::Serializer do
       end
     end
   end
+
+  describe 'context passing' do
+    it 'passes context to resource initialization' do
+      context = { current_user: 'admin' }
+      expect(test_resource_class).to receive(:new).with(model_instance, context).and_call_original
+      
+      serializer.serialize(model_instance, context)
+    end
+  end
+
+  describe 'error handling' do
+    it 'handles nil objects gracefully' do
+      result = serializer.serialize(nil)
+      expect(result[:data]).to be_nil
+    end
+
+    it 'handles empty collections' do
+      result = serializer.serialize([])
+      expect(result[:data]).to eq([])
+    end
+  end
+
+  describe 'attribute formatting' do
+    it 'handles nil attribute values' do
+      user_with_nil = mock_model.new(id: 1, name: nil, email: 'test@example.com')
+      result = serializer.serialize(user_with_nil)
+      
+      expect(result[:data][:attributes][:name]).to be_nil
+    end
+
+    it 'handles complex attribute values' do
+      user_with_complex_data = mock_model.new(
+        id: 1,
+        name: 'John',
+        email: 'john@example.com',
+        created_at: Time.parse('2024-01-01T12:00:00Z')
+      )
+      
+      result = serializer.serialize(user_with_complex_data)
+      expect(result[:data][:attributes][:'created-at']).to eq('2024-01-01T12:00:00Z')
+    end
+  end
 end
