@@ -31,7 +31,7 @@ module JPie
 
     def serialize_collection(resources)
       {
-        data: resources.map { |resource| serialize_resource_data(resource) }
+        data: resources.map { serialize_resource_data(it) }
       }
     end
 
@@ -49,8 +49,8 @@ module JPie
       attributes = resource.attributes_hash
       return {} if attributes.empty?
 
-      attributes.transform_keys { |key| format_key(key) }
-                .transform_values { |value| serialize_value(value) }
+      attributes.transform_keys { format_key(it) }
+                .transform_values { serialize_value(it) }
     end
 
     def serialize_value(value)

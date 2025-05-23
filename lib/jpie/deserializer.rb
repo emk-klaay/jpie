@@ -31,7 +31,7 @@ module JPie
     end
 
     def deserialize_collection(resources_data, context)
-      resources_data.map { |resource_data| deserialize_single(resource_data, context) }
+      resources_data.map { deserialize_single(it, context) }
     end
 
     def extract_attributes(resource_data, _context)
@@ -42,13 +42,13 @@ module JPie
       validate_type!(type) if type
 
       # Transform keys back to model format
-      model_attributes = attributes.transform_keys { |key| unformat_key(key) }
+      model_attributes = attributes.transform_keys { unformat_key(it) }
 
       # Only include attributes that are defined in the resource class
       allowed_attributes = resource_class._attributes.map(&:to_s)
       filtered_attributes = model_attributes.slice(*allowed_attributes)
 
-      result = filtered_attributes.transform_values { |value| deserialize_value(value) }
+      result = filtered_attributes.transform_values { deserialize_value(it) }
       result['id'] = id if id
 
       result.with_indifferent_access

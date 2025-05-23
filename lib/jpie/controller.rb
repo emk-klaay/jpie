@@ -156,8 +156,8 @@ module JPie
     end
 
     def render_validation_error(error)
-      errors = error.record.errors.full_messages.map do |message|
-        JPie::Errors::ValidationError.new(detail: message).to_hash
+      errors = error.record.errors.full_messages.map do
+        JPie::Errors::ValidationError.new(detail: it).to_hash
       end
 
       render json: { errors: },

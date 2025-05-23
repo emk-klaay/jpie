@@ -44,7 +44,7 @@ module JPie
       end
 
       def attributes(*names)
-        names.each { |name| attribute(name) }
+        names.each { attribute(it) }
       end
 
       private
@@ -72,8 +72,8 @@ module JPie
     delegate :type, to: :class
 
     def attributes_hash
-      self.class._attributes.index_with do |attr_name|
-        public_send(attr_name)
+      self.class._attributes.index_with do
+        public_send(it)
       end
     end
 
