@@ -8,7 +8,7 @@ module JPie
 
     included do
       rescue_from JPie::Errors::Error, with: :render_jsonapi_error
-      
+
       if defined?(ActiveRecord)
         rescue_from ActiveRecord::RecordNotFound, with: :render_not_found_error
         rescue_from ActiveRecord::RecordInvalid, with: :render_validation_error

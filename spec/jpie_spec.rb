@@ -4,7 +4,7 @@ require 'spec_helper'
 
 RSpec.describe JPie do
   it 'has a version number' do
-    expect(JPie::VERSION).not_to be nil
+    expect(JPie::VERSION).not_to be_nil
     expect(JPie::VERSION).to match(/\A\d+\.\d+\.\d+\z/)
   end
 
@@ -35,4 +35,4 @@ RSpec.describe JPie do
       expect { JPie::Errors::Error }.not_to raise_error
     end
   end
-end 
+end

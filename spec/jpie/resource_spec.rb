@@ -134,7 +134,7 @@ RSpec.describe JPie::Resource do
       def model_instance.custom_method
         'custom_result'
       end
-      
+
       expect(resource_instance.custom_method).to eq('custom_result')
     end
 

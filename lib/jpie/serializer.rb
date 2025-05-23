@@ -11,8 +11,8 @@ module JPie
 
     def serialize(objects, context = {})
       return { data: nil } if objects.nil?
-      
-      resources = Array(objects).map { |obj| obj ? resource_class.new(obj, context) : nil }.compact
+
+      resources = Array(objects).filter_map { |obj| obj ? resource_class.new(obj, context) : nil }
 
       if objects.is_a?(Array) || objects.respond_to?(:each)
         serialize_collection(resources)

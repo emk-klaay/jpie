@@ -5,10 +5,10 @@ require 'simplecov'
 SimpleCov.start do
   add_filter '/spec/'
   add_filter '/vendor/'
-  
+
   add_group 'Core', 'lib/jpie'
   add_group 'Generators', 'lib/jpie/generators'
-  
+
   minimum_coverage 80
   minimum_coverage_by_file 60
 end

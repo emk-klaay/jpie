@@ -26,7 +26,7 @@ RSpec.describe JPie::Configuration do
     end
 
     it 'does not accept string values directly' do
-      # Note: The implementation doesn't convert strings to symbols
+      # NOTE: The implementation doesn't convert strings to symbols
       expect { config.json_key_format = 'camelized' }.to raise_error(ArgumentError)
     end
   end
@@ -37,7 +37,7 @@ RSpec.describe JPie::Configuration do
       expect(config.default_page_size).to eq(50)
     end
 
-    # Note: The current implementation doesn't validate page sizes
+    # NOTE: The current implementation doesn't validate page sizes
     it 'accepts any value (no validation)' do
       config.default_page_size = -1
       expect(config.default_page_size).to eq(-1)
@@ -50,7 +50,7 @@ RSpec.describe JPie::Configuration do
       expect(config.maximum_page_size).to eq(200)
     end
 
-    # Note: The current implementation doesn't validate page sizes
+    # NOTE: The current implementation doesn't validate page sizes
     it 'accepts any value (no validation)' do
       config.maximum_page_size = -1
       expect(config.maximum_page_size).to eq(-1)
@@ -61,26 +61,26 @@ end
 RSpec.describe JPie do
   describe '.configure' do
     it 'yields the configuration' do
-      expect { |b| JPie.configure(&b) }.to yield_with_args(JPie.configuration)
+      expect { |b| described_class.configure(&b) }.to yield_with_args(described_class.configuration)
     end
 
     it 'allows setting configuration options' do
-      original_format = JPie.configuration.json_key_format
-      original_page_size = JPie.configuration.default_page_size
-      original_max_size = JPie.configuration.maximum_page_size
+      original_format = described_class.configuration.json_key_format
+      original_page_size = described_class.configuration.default_page_size
+      original_max_size = described_class.configuration.maximum_page_size
 
-      JPie.configure do |config|
+      described_class.configure do |config|
         config.json_key_format = :underscored
         config.default_page_size = 25
         config.maximum_page_size = 200
       end
 
-      expect(JPie.configuration.json_key_format).to eq(:underscored)
-      expect(JPie.configuration.default_page_size).to eq(25)
-      expect(JPie.configuration.maximum_page_size).to eq(200)
+      expect(described_class.configuration.json_key_format).to eq(:underscored)
+      expect(described_class.configuration.default_page_size).to eq(25)
+      expect(described_class.configuration.maximum_page_size).to eq(200)
 
       # Reset to original values
-      JPie.configure do |config|
+      described_class.configure do |config|
         config.json_key_format = original_format
         config.default_page_size = original_page_size
         config.maximum_page_size = original_max_size
@@ -90,11 +90,11 @@ RSpec.describe JPie do
 
   describe '.configuration' do
     it 'returns a Configuration instance' do
-      expect(JPie.configuration).to be_a(JPie::Configuration)
+      expect(described_class.configuration).to be_a(JPie::Configuration)
     end
 
     it 'returns the same instance on multiple calls' do
-      expect(JPie.configuration).to be(JPie.configuration)
+      expect(described_class.configuration).to be(described_class.configuration)
     end
   end
-end 
+end

@@ -4,7 +4,9 @@ require 'spec_helper'
 
 RSpec.describe JPie::Errors do
   describe JPie::Errors::Error do
-    let(:error) { described_class.new(status: 500, title: 'Test Error', detail: 'Test detail', source: { pointer: '/data' }) }
+    let(:error) do
+      described_class.new(status: 500, title: 'Test Error', detail: 'Test detail', source: { pointer: '/data' })
+    end
 
     describe '#initialize' do
       it 'sets values correctly' do
@@ -137,4 +139,4 @@ RSpec.describe JPie::Errors do
       end
     end
   end
-end 
+end
