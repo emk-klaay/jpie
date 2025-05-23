@@ -51,17 +51,25 @@ RSpec.describe JPie::Serializer do
     describe 'with multiple posts' do
       let(:result) { serializer.serialize([first_post, second_post], {}, includes: ['user']) }
 
-      it 'includes data for all posts', :aggregate_failures do
+      it 'includes data for all posts' do
         expect(result).to have_key(:data)
+      end
+
+      it 'includes included section for multiple posts' do
         expect(result).to have_key(:included)
+      end
+
+      it 'returns array data for multiple posts', :aggregate_failures do
         expect(result[:data]).to be_an(Array)
         expect(result[:data].length).to eq(2)
       end
 
-      it 'deduplicates the same user in included section', :aggregate_failures do
+      it 'deduplicates the same user in included section' do
         # Should only include the user once even though both posts reference the same user
         expect(result[:included].length).to eq(1)
+      end
 
+      it 'includes correct user data in deduplicated included section', :aggregate_failures do
         included_user = result[:included].first
         expect(included_user[:id]).to eq(user.id.to_s)
         expect(included_user[:type]).to eq('users')
@@ -203,23 +211,67 @@ RSpec.describe JPie::Serializer do
         controller.show
         response_data = controller.last_render[:json]
 
-        # Verify post data
         expect(response_data).to have_key(:data)
+        expect(response_data).to have_key(:included)
+      end
+
+      it 'includes correct post data in main section', :aggregate_failures do
+        user = User.create!(name: 'John Doe', email: 'john@example.com')
+        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
+
+        controller.params = { id: post.id.to_s, include: 'user' }
+        controller.show
+        response_data = controller.last_render[:json]
+
         expect(response_data[:data][:id]).to eq(post.id.to_s)
         expect(response_data[:data][:type]).to eq('posts')
+      end
 
-        # Verify included user data
-        expect(response_data).to have_key(:included)
+      it 'includes correct included section structure', :aggregate_failures do
+        user = User.create!(name: 'John Doe', email: 'john@example.com')
+        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
+
+        controller.params = { id: post.id.to_s, include: 'user' }
+        controller.show
+        response_data = controller.last_render[:json]
+
         expect(response_data[:included]).to be_an(Array)
         expect(response_data[:included].length).to eq(1)
+      end
+
+      it 'includes correct user data in included section', :aggregate_failures do
+        user = User.create!(name: 'John Doe', email: 'john@example.com')
+        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
+
+        controller.params = { id: post.id.to_s, include: 'user' }
+        controller.show
+        response_data = controller.last_render[:json]
 
         included_user = response_data[:included].first
         expect(included_user[:id]).to eq(user.id.to_s)
         expect(included_user[:type]).to eq('users')
+      end
+
+      it 'includes correct user attributes in included section', :aggregate_failures do
+        user = User.create!(name: 'John Doe', email: 'john@example.com')
+        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
+
+        controller.params = { id: post.id.to_s, include: 'user' }
+        controller.show
+        response_data = controller.last_render[:json]
+
+        included_user = response_data[:included].first
         expect(included_user[:attributes]['name']).to eq('John Doe')
         expect(included_user[:attributes]['email']).to eq('john@example.com')
+      end
 
-        # Verify content type
+      it 'returns correct content type' do
+        user = User.create!(name: 'John Doe', email: 'john@example.com')
+        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
+
+        controller.params = { id: post.id.to_s, include: 'user' }
+        controller.show
+
         expect(controller.last_render[:content_type]).to eq('application/vnd.api+json')
       end
     end
@@ -233,14 +285,21 @@ RSpec.describe JPie::Serializer do
       controller.params = { id: post.id.to_s }
       controller.show
 
-      # Verify the response includes the post data
       response_data = controller.last_render[:json]
       expect(response_data).to have_key(:data)
+      expect(response_data).not_to have_key(:included)
+    end
+
+    it 'includes correct post data when no include parameter provided', :aggregate_failures do
+      user = User.create!(name: 'John Doe', email: 'john@example.com')
+      post = Post.create!(title: 'Test Post', content: 'Content', user: user)
+
+      controller.params = { id: post.id.to_s }
+      controller.show
+
+      response_data = controller.last_render[:json]
       expect(response_data[:data][:id]).to eq(post.id.to_s)
       expect(response_data[:data][:type]).to eq('posts')
-
-      # Verify the response does not include related data
-      expect(response_data).not_to have_key(:included)
     end
   end
 end

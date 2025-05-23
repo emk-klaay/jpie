@@ -24,29 +24,43 @@ RSpec.describe JPie::Serializer do
     context 'with a single object' do
       let(:result) { serializer.serialize(model_instance) }
 
-      it 'returns a JSON:API compliant structure', :aggregate_failures do
+      it 'returns JSON:API compliant structure' do
         expect(result).to have_key(:data)
+      end
+
+      it 'returns hash data for single object' do
         expect(result[:data]).to be_a(Hash)
       end
 
-      it 'includes the correct id and type', :aggregate_failures do
+      it 'includes correct id' do
         data = result[:data]
         expect(data[:id]).to eq(model_instance.id.to_s)
+      end
+
+      it 'includes correct type' do
+        data = result[:data]
         expect(data[:type]).to eq('users')
       end
 
-      it 'includes the correct attributes', :aggregate_failures do
+      it 'includes correct attributes' do
         attributes = result[:data][:attributes]
         expect(attributes).to include(
           'name' => 'John Doe',
           'email' => 'john@example.com'
         )
+      end
+
+      it 'excludes timestamps from attributes', :aggregate_failures do
+        attributes = result[:data][:attributes]
         expect(attributes).not_to have_key('created_at')
         expect(attributes).not_to have_key('updated_at')
       end
 
-      it 'includes meta data with timestamps', :aggregate_failures do
+      it 'includes meta data' do
         expect(result[:data]).to have_key(:meta)
+      end
+
+      it 'includes timestamps in meta', :aggregate_failures do
         meta = result[:data][:meta]
         expect(meta).to have_key('created_at')
         expect(meta).to have_key('updated_at')
@@ -61,19 +75,28 @@ RSpec.describe JPie::Serializer do
     context 'with a collection' do
       let(:result) { serializer.serialize(model_collection) }
 
-      it 'returns a JSON:API compliant collection structure', :aggregate_failures do
+      it 'returns JSON:API compliant collection structure' do
         expect(result).to have_key(:data)
+      end
+
+      it 'returns array data for collection' do
         expect(result[:data]).to be_an(Array)
+      end
+
+      it 'returns correct number of items' do
         expect(result[:data].length).to eq(2)
       end
 
-      it 'includes correct data for each item', :aggregate_failures do
+      it 'includes correct data for first item', :aggregate_failures do
         first_item = result[:data].first
-        second_item = result[:data].last
 
         expect(first_item[:id]).to eq(model_collection.first.id.to_s)
         expect(first_item[:type]).to eq('users')
         expect(first_item[:attributes]['name']).to eq('John Doe')
+      end
+
+      it 'includes correct data for second item', :aggregate_failures do
+        second_item = result[:data].last
 
         expect(second_item[:id]).to eq(model_collection.last.id.to_s)
         expect(second_item[:type]).to eq('users')

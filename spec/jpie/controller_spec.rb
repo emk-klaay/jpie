@@ -83,22 +83,44 @@ RSpec.describe JPie::Controller do
   end
 
   describe '#index' do
-    it 'renders all resources', :aggregate_failures do
+    it 'renders all resources' do
       controller.index
 
       expect(controller.last_render[:json]).to have_key(:data)
+    end
+
+    it 'returns array data for index' do
+      controller.index
+
       expect(controller.last_render[:json][:data]).to be_an(Array)
+    end
+
+    it 'returns ok status for index' do
+      controller.index
+
       expect(controller.last_render[:status]).to eq(:ok)
     end
   end
 
   describe '#show' do
-    it 'renders a single resource', :aggregate_failures do
+    it 'renders a single resource' do
       controller.params = { id: test_record.id.to_s }
       controller.show
 
       expect(controller.last_render[:json]).to have_key(:data)
+    end
+
+    it 'returns hash data for show' do
+      controller.params = { id: test_record.id.to_s }
+      controller.show
+
       expect(controller.last_render[:json][:data]).to be_a(Hash)
+    end
+
+    it 'returns ok status for show' do
+      controller.params = { id: test_record.id.to_s }
+      controller.show
+
       expect(controller.last_render[:status]).to eq(:ok)
     end
   end
@@ -162,35 +184,56 @@ RSpec.describe JPie::Controller do
         end.new
       end
 
-      it 'handles ActiveRecord::RecordNotFound', :aggregate_failures do
+      it 'handles ActiveRecord::RecordNotFound with errors key' do
         controller_with_errors.send(:render_not_found_error, ActiveRecord::RecordNotFound.new('Not found'))
 
         expect(controller_with_errors.last_render[:json]).to have_key(:errors)
+      end
+
+      it 'handles ActiveRecord::RecordNotFound with 404 status' do
+        controller_with_errors.send(:render_not_found_error, ActiveRecord::RecordNotFound.new('Not found'))
+
         expect(controller_with_errors.last_render[:status]).to eq(404)
       end
 
-      it 'handles ActiveRecord::RecordInvalid', :aggregate_failures do
+      it 'handles ActiveRecord::RecordInvalid with errors key' do
         invalid_error = ActiveRecord::RecordInvalid.new
         controller_with_errors.send(:render_validation_error, invalid_error)
 
         expect(controller_with_errors.last_render[:json]).to have_key(:errors)
+      end
+
+      it 'handles ActiveRecord::RecordInvalid with unprocessable_entity status' do
+        invalid_error = ActiveRecord::RecordInvalid.new
+        controller_with_errors.send(:render_validation_error, invalid_error)
+
         expect(controller_with_errors.last_render[:status]).to eq(:unprocessable_entity)
       end
 
-      it 'handles JPie::Errors::Error', :aggregate_failures do
+      it 'handles JPie::Errors::Error with errors key' do
         jpie_error = JPie::Errors::BadRequestError.new(detail: 'Bad request')
         controller_with_errors.send(:render_jsonapi_error, jpie_error)
 
         expect(controller_with_errors.last_render[:json]).to have_key(:errors)
+      end
+
+      it 'handles JPie::Errors::Error with correct status' do
+        jpie_error = JPie::Errors::BadRequestError.new(detail: 'Bad request')
+        controller_with_errors.send(:render_jsonapi_error, jpie_error)
+
         expect(controller_with_errors.last_render[:status]).to eq(400)
       end
     end
   end
 
   describe 'context building' do
-    it 'builds context with controller and action', :aggregate_failures do
+    it 'builds context with controller' do
       context = controller.send(:context)
       expect(context[:controller]).to eq(controller)
+    end
+
+    it 'builds context with action' do
+      context = controller.send(:context)
       expect(context[:action]).to eq('test')
     end
 
@@ -225,17 +268,27 @@ RSpec.describe JPie::Controller do
   end
 
   describe 'rendering with meta' do
-    it 'includes meta in single resource response', :aggregate_failures do
+    it 'includes meta in single resource response' do
       controller.send(:render_jsonapi_resource, User.new, meta: { total: 1 })
 
       expect(controller.last_render[:json]).to have_key(:meta)
+    end
+
+    it 'includes correct meta data in single resource response' do
+      controller.send(:render_jsonapi_resource, User.new, meta: { total: 1 })
+
       expect(controller.last_render[:json][:meta]).to eq({ total: 1 })
     end
 
-    it 'includes meta in collection response', :aggregate_failures do
+    it 'includes meta in collection response' do
       controller.send(:render_jsonapi_resources, [User.new], meta: { total: 1 })
 
       expect(controller.last_render[:json]).to have_key(:meta)
+    end
+
+    it 'includes correct meta data in collection response' do
+      controller.send(:render_jsonapi_resources, [User.new], meta: { total: 1 })
+
       expect(controller.last_render[:json][:meta]).to eq({ total: 1 })
     end
   end
