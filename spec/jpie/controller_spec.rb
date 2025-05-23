@@ -18,7 +18,7 @@ RSpec.describe JPie::Controller do
   let(:controller_class) do
     Class.new(ApplicationController) do
       include JPie::Controller
-      jsonapi_resource TestResource
+      jsonapi_resource UserResource
 
       # Mock Rails controller methods
       attr_accessor :params, :request, :response
@@ -145,7 +145,7 @@ RSpec.describe JPie::Controller do
       let(:controller_with_errors) do
         Class.new(ApplicationController) do
           include JPie::Controller
-          jsonapi_resource TestResource
+          jsonapi_resource UserResource
 
           def initialize
             @params = {}

@@ -3,16 +3,7 @@
 require 'spec_helper'
 
 RSpec.describe JPie::Serializer do
-  # Test resource using the ActiveRecord User model from database.rb
-  let(:test_resource_class) do
-    Class.new(JPie::Resource) do
-      model User
-      attributes :name, :email
-      attribute :created_at
-    end
-  end
-
-  let(:serializer) { described_class.new(test_resource_class) }
+  let(:serializer) { described_class.new(UserResource) }
 
   let(:model_instance) do
     User.create!(
@@ -85,7 +76,7 @@ RSpec.describe JPie::Serializer do
   describe 'context passing' do
     it 'passes context to resource initialization' do
       context = { current_user: 'admin' }
-      expect(test_resource_class).to receive(:new).with(model_instance, context).and_call_original
+      expect(UserResource).to receive(:new).with(model_instance, context).and_call_original
 
       serializer.serialize(model_instance, context)
     end

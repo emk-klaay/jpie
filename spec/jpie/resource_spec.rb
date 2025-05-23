@@ -3,14 +3,6 @@
 require 'spec_helper'
 
 RSpec.describe JPie::Resource do
-  # Test resource using the ActiveRecord User model from database.rb
-  let(:test_resource_class) do
-    Class.new(JPie::Resource) do
-      model User
-      attributes :name, :email
-    end
-  end
-
   let(:model_instance) do
     User.create!(
       name: 'John Doe',
@@ -18,11 +10,11 @@ RSpec.describe JPie::Resource do
     )
   end
 
-  let(:resource_instance) { test_resource_class.new(model_instance) }
+  let(:resource_instance) { UserResource.new(model_instance) }
 
   describe '.model' do
     it 'returns the configured model class' do
-      expect(test_resource_class.model).to eq(User)
+      expect(UserResource.model).to eq(User)
     end
 
     it 'infers model class from resource name when not explicitly set' do
@@ -54,7 +46,7 @@ RSpec.describe JPie::Resource do
     end
 
     it 'returns the inferred type name' do
-      expect(test_resource_class.type).to eq('users')
+      expect(UserResource.type).to eq('users')
     end
 
     it 'falls back to class name when model unavailable' do
@@ -73,7 +65,7 @@ RSpec.describe JPie::Resource do
     end
 
     it 'adds attributes to the _attributes list' do
-      expect(test_resource_class._attributes).to contain_exactly(:name, :email)
+      expect(UserResource._attributes).to contain_exactly(:name, :email, :created_at, :updated_at)
     end
   end
 
@@ -93,10 +85,12 @@ RSpec.describe JPie::Resource do
     it 'returns a hash of all attributes' do
       attributes = resource_instance.attributes_hash
 
-      expect(attributes).to eq({
-                                 name: 'John Doe',
-                                 email: 'john@example.com'
-                               })
+      expect(attributes).to include(
+        name: 'John Doe',
+        email: 'john@example.com'
+      )
+      expect(attributes).to have_key(:created_at)
+      expect(attributes).to have_key(:updated_at)
     end
   end
 
