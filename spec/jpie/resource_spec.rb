@@ -13,8 +13,20 @@ RSpec.describe JPie::Resource do
   let(:resource_instance) { UserResource.new(model_instance) }
 
   describe '.model' do
-    it 'returns the configured model class' do
+    it 'automatically infers User model from UserResource' do
       expect(UserResource.model).to eq(User)
+    end
+
+    it 'automatically infers Post model from PostResource' do
+      expect(PostResource.model).to eq(Post)
+    end
+
+    it 'allows explicit model override when specified' do
+      class ExplicitModelResource < JPie::Resource
+        model User # Explicitly set to User
+      end
+
+      expect(ExplicitModelResource.model).to eq(User)
     end
 
     it 'infers model class from resource name when not explicitly set' do
