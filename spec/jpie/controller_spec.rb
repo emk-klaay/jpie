@@ -8,12 +8,6 @@ require 'active_record'
 # Mock controller for testing
 class ApplicationController < ActionController::Base; end
 
-# Mock resource for testing - uses the ActiveRecord User model from database.rb
-class TestResource < JPie::Resource
-  model User
-  attributes :name, :email
-end
-
 RSpec.describe JPie::Controller do
   let(:controller_class) do
     Class.new(ApplicationController) do
