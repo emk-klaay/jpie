@@ -2,6 +2,17 @@
 
 require 'spec_helper'
 
+# Define ApplicationController for tests
+class ApplicationController
+  def self.rescue_from(exception_class, with: nil)
+    # Mock implementation for testing
+  end
+
+  def head(status)
+    # Mock implementation
+  end
+end
+
 RSpec.describe 'PostsController' do
   before do
     # Define mock classes for PostsController test

@@ -120,14 +120,16 @@ module JPie
     end
 
     def render_jsonapi_resource(resource, status: :ok, meta: nil)
-      json_data = serializer.serialize(resource, context)
+      includes = parse_include_params
+      json_data = serializer.serialize(resource, context, includes: includes)
       json_data[:meta] = meta if meta
 
       render json: json_data, status:, content_type: 'application/vnd.api+json'
     end
 
     def render_jsonapi_resources(resources, status: :ok, meta: nil)
-      json_data = serializer.serialize(resources, context)
+      includes = parse_include_params
+      json_data = serializer.serialize(resources, context, includes: includes)
       json_data[:meta] = meta if meta
 
       render json: json_data, status:, content_type: 'application/vnd.api+json'
@@ -149,6 +151,10 @@ module JPie
         controller: self,
         action: action_name
       }
+    end
+
+    def parse_include_params
+      params[:include]&.split(',') || []
     end
 
     private

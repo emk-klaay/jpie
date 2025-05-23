@@ -4,13 +4,15 @@ module JPie
   class Resource
     include ActiveSupport::Configurable
 
-    class_attribute :_type, :_attributes, :_model_class
+    class_attribute :_type, :_attributes, :_model_class, :_relationships
     self._attributes = []
+    self._relationships = {}
 
     class << self
       def inherited(subclass)
         super
         subclass._attributes = _attributes.dup
+        subclass._relationships = _relationships.dup
       end
 
       def model(model_class = nil)
@@ -45,6 +47,16 @@ module JPie
 
       def attributes(*names)
         names.each { attribute(it) }
+      end
+
+      def relationship(name, options = {})
+        name = name.to_sym
+        _relationships[name] = options
+        
+        define_method(name) do
+          attr_name = options[:attr] || name
+          @object.public_send(attr_name)
+        end
       end
 
       private
