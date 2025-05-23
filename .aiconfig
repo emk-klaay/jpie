@@ -18,6 +18,7 @@
 - Follow the existing test structure in spec/
 - Test both success and error cases
 - Use modern RSpec features and syntax
+- Don't reduce test coverage (line, file, branch, or other)
 
 [git_workflow]
 # Git commit guidelines
@@ -27,6 +28,7 @@
 - Update documentation in the same commit as code changes
 - Ignore spec/examples.txt and other files listed in .gitignore
 - Include Ruby/Rails version requirements in relevant commits
+- Update tests in the same commit as code changes
 
 [project_structure]
 # Maintain the following project structure
