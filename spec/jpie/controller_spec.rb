@@ -8,38 +8,36 @@ require 'active_record'
 # Mock controller for testing
 class ApplicationController < ActionController::Base; end
 
-RSpec.describe JPie::Controller do
-  let(:controller_class) do
-    Class.new(ApplicationController) do
-      include JPie::Controller
-      jsonapi_resource UserResource
+# Test controller that should automatically infer UserResource from its name
+class UsersController < ApplicationController
+  include JPie::Controller
 
-      # Mock Rails controller methods
-      attr_accessor :params, :request, :response
+  # Mock Rails controller methods
+  attr_accessor :params, :request, :response
 
-      def initialize
-        @params = {}
-        @request = MockRequest.new
-        @response = MockResponse.new
-      end
-
-      def render(options = {})
-        @last_render = options
-      end
-
-      def head(status)
-        @last_head = status
-      end
-
-      def action_name
-        'test'
-      end
-
-      attr_reader :last_render, :last_head
-    end
+  def initialize
+    @params = {}
+    @request = MockRequest.new
+    @response = MockResponse.new
   end
 
-  let(:controller) { controller_class.new }
+  def render(options = {})
+    @last_render = options
+  end
+
+  def head(status)
+    @last_head = status
+  end
+
+  def action_name
+    'test'
+  end
+
+  attr_reader :last_render, :last_head
+end
+
+RSpec.describe JPie::Controller do
+  let(:controller) { UsersController.new }
   let(:test_record) { User.create!(name: 'John', email: 'john@example.com') }
 
   before do
@@ -137,9 +135,14 @@ RSpec.describe JPie::Controller do
 
     describe 'rescue_from handlers' do
       let(:controller_with_errors) do
+        # Define a controller class for error testing
         Class.new(ApplicationController) do
           include JPie::Controller
-          jsonapi_resource UserResource
+
+          # Override the inferred resource with UserResource for testing
+          def self.name
+            'UsersController'
+          end
 
           def initialize
             @params = {}
@@ -234,6 +237,40 @@ RSpec.describe JPie::Controller do
 
       expect(controller.last_render[:json]).to have_key(:meta)
       expect(controller.last_render[:json][:meta]).to eq({ total: 1 })
+    end
+  end
+
+  describe 'resource inference' do
+    it 'automatically infers UserResource from UsersController' do
+      expect(controller.resource_class).to eq(UserResource)
+    end
+
+    it 'allows explicit resource setting with jsonapi_resource macro' do
+      # Test that explicit setting still works
+      explicit_controller_class = Class.new(ApplicationController) do
+        include JPie::Controller
+        jsonapi_resource PostResource
+
+        def self.name
+          'SomeOtherController'
+        end
+      end
+
+      explicit_controller = explicit_controller_class.new
+      expect(explicit_controller.resource_class).to eq(PostResource)
+    end
+
+    it 'handles controllers that do not match any resource' do
+      unknown_controller_class = Class.new(ApplicationController) do
+        include JPie::Controller
+
+        def self.name
+          'UnknownThingsController'
+        end
+      end
+
+      # Should not raise an error, just won't have resource methods
+      expect { unknown_controller_class.new }.not_to raise_error
     end
   end
 end

@@ -33,6 +33,86 @@ And then execute:
 bundle install
 ```
 
+Or install it yourself as:
+
+```bash
+gem install jpie
+```
+
+## Usage
+
+### Automatic Resource Inference
+
+JPie automatically infers the resource class from your controller name, eliminating the need for explicit configuration in most cases:
+
+```ruby
+# app/controllers/users_controller.rb
+class UsersController < ApplicationController
+  include JPie::Controller
+  
+  # That's it! JPie automatically infers UserResource
+  # and provides all CRUD methods
+end
+
+# app/controllers/posts_controller.rb  
+class PostsController < ApplicationController
+  include JPie::Controller
+  
+  # Automatically infers PostResource
+end
+```
+
+The inference follows these conventions:
+- `UsersController` → `UserResource`
+- `PostsController` → `PostResource`
+- `Api::V1::UsersController` → `UserResource` (ignores namespaces)
+
+### Explicit Resource Configuration
+
+You can still explicitly specify a resource class when needed:
+
+```ruby
+class UsersController < ApplicationController
+  include JPie::Controller
+  jsonapi_resource CustomUserResource
+end
+```
+
+### Resource Classes
+
+Define your resource classes to specify which attributes should be serialized:
+
+```ruby
+class UserResource < JPie::Resource
+  model User
+  
+  attribute :id
+  attribute :name
+  attribute :email
+end
+```
+
+### Model Classes
+
+Your model classes work with any ORM or plain Ruby objects:
+
+```ruby
+class User < ActiveRecord::Base
+  # ActiveRecord model
+end
+
+# Or with plain Ruby objects
+class User
+  attr_accessor :id, :name, :email
+  
+  def initialize(id:, name:, email:)
+    @id = id
+    @name = name
+    @email = email
+  end
+end
+```
+
 ## Quick Start
 
 ### 1. Create a Resource

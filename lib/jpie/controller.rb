@@ -17,23 +17,19 @@ module JPie
 
     class_methods do
       def jsonapi_resource(resource_class)
+        setup_jsonapi_resource(resource_class)
+      end
+
+      private
+
+      def setup_jsonapi_resource(resource_class)
         define_method :resource_class do
           resource_class
-        end
-
-        define_method :serializer do
-          @serializer ||= JPie::Serializer.new(resource_class)
-        end
-
-        define_method :deserializer do
-          @deserializer ||= JPie::Deserializer.new(resource_class)
         end
 
         # Define automatic CRUD methods
         define_automatic_crud_methods(resource_class)
       end
-
-      private
 
       def define_automatic_crud_methods(resource_class)
         model_class = resource_class.model
@@ -104,6 +100,19 @@ module JPie
       head :no_content
     end
 
+    def resource_class
+      # Default implementation that infers from controller name
+      @resource_class ||= infer_resource_class
+    end
+
+    def serializer
+      @serializer ||= JPie::Serializer.new(resource_class)
+    end
+
+    def deserializer
+      @deserializer ||= JPie::Deserializer.new(resource_class)
+    end
+
     protected
 
     def model_class
@@ -163,6 +172,30 @@ module JPie
       render json: { errors: },
              status: :unprocessable_entity,
              content_type: 'application/vnd.api+json'
+    end
+
+    def infer_resource_class
+      # Convert controller name to resource class name
+      # e.g., "UsersController" -> "UserResource"
+      # e.g., "Api::V1::UsersController" -> "UserResource"
+      controller_name = self.class.name
+      return nil unless controller_name&.end_with?('Controller')
+
+      # Remove "Controller" suffix and any namespace
+      base_name = controller_name.split('::').last.chomp('Controller')
+      
+      # Convert plural controller name to singular resource name
+      # e.g., "Users" -> "User"
+      singular_name = base_name.singularize
+      resource_class_name = "#{singular_name}Resource"
+
+      # Try to constantize the resource class
+      resource_class_name.constantize
+    rescue NameError
+      raise StandardError.new(
+        "Unable to infer resource class '#{resource_class_name}' for #{controller_name}. " \
+        "Either define #{resource_class_name} or use jsonapi_resource to specify the resource class."
+      )
     end
   end
 end
