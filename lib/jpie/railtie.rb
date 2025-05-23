@@ -8,6 +8,13 @@ module JPie
 
     config.jpie = ActiveSupport::OrderedOptions.new
 
+    # Configure Rails inflections to preserve JPie casing
+    initializer 'jpie.inflections' do
+      ActiveSupport::Inflector.inflections(:en) do |inflect|
+        inflect.acronym 'JPie'
+      end
+    end
+
     initializer 'jpie.configure' do |app|
       JPie.configure do |config|
         app.config.jpie.each do |key, value|

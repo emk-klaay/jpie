@@ -79,8 +79,8 @@ RSpec.describe 'Authorization Integration' do
 
         expect(result[:data]).to be_an(Array)
         expect(result[:data].length).to eq(3)
-        
-        titles = result[:data].map { _1[:attributes]['title'] }
+
+        titles = result[:data].map { it[:attributes]['title'] }
         expect(titles).to contain_exactly('Admin Post', 'User Post', 'Other Post')
       end
 
@@ -91,7 +91,7 @@ RSpec.describe 'Authorization Integration' do
 
         expect(result[:data]).to be_an(Array)
         expect(result[:data].length).to eq(1)
-        
+
         expect(result[:data].first[:attributes]['title']).to eq('User Post')
       end
     end
@@ -111,4 +111,4 @@ RSpec.describe 'Authorization Integration' do
       end
     end
   end
-end 
+end

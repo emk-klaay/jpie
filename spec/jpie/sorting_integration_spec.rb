@@ -11,7 +11,7 @@ RSpec.describe 'Sorting Integration' do
   let!(:charlie) { User.create!(name: 'Charlie', email: 'charlie@example.com') }
 
   let(:controller) do
-    Class.new(ActionController::Base) do
+    Class.new(ApplicationController) do
       include JPie::Controller
 
       def self.name
@@ -161,7 +161,7 @@ RSpec.describe 'Sorting Integration' do
 
     let(:custom_controller) do
       resource_class = custom_resource_class
-      Class.new(ActionController::Base) do
+      Class.new(ApplicationController) do
         include JPie::Controller
 
         define_method :resource_class do
