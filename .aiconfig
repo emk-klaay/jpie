@@ -4,6 +4,8 @@
 [code_style]
 # Follow these code style guidelines
 - Follow Ruby style guide and RuboCop rules defined in .rubocop.yml
+- Prefer rubocop autocorrect 
+- Always pass rubocop before committing to git
 
 [documentation]
 # Documentation requirements
