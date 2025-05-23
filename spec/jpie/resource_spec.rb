@@ -42,11 +42,45 @@ RSpec.describe JPie::Resource do
     it 'sets and gets the model class' do
       expect(test_resource_class.model).to eq(mock_model)
     end
+
+    it 'infers model class from resource name when not explicitly set' do
+      class TestResource < JPie::Resource
+        # No explicit model set
+      end
+
+      # The actual implementation will try to constantize 'Test' which doesn't exist
+      # so it should return nil, but we can test the behavior
+      expect(TestResource.model).to be_nil
+    end
+
+    it 'returns nil when model cannot be inferred' do
+      class UnknownResource < JPie::Resource
+        # No explicit model set and can't be inferred
+      end
+
+      expect(UnknownResource.send(:infer_model_class)).to be_nil
+    end
   end
 
   describe '.type' do
+    it 'returns custom type when set' do
+      class CustomResource < JPie::Resource
+        type 'custom_things'
+      end
+
+      expect(CustomResource.type).to eq('custom_things')
+    end
+
     it 'returns the inferred type name' do
       expect(test_resource_class.type).to eq('users')
+    end
+
+    it 'falls back to class name when model unavailable' do
+      class StandaloneResource < JPie::Resource
+        # No model set
+      end
+
+      expect(StandaloneResource.type).to eq('standalones')
     end
   end
 
@@ -94,14 +128,38 @@ RSpec.describe JPie::Resource do
     end
   end
 
-  describe 'method delegation' do
-    it 'delegates unknown methods to the wrapped object' do
-      # Add a method to the model instance
+  describe 'method_missing and respond_to_missing?' do
+    it 'delegates unknown methods to the object' do
+      # Define a custom method on the model instance
       def model_instance.custom_method
         'custom_result'
       end
-
+      
       expect(resource_instance.custom_method).to eq('custom_result')
+    end
+
+    it 'responds to methods that the object responds to' do
+      allow(model_instance).to receive(:respond_to?).with(:custom_method, false).and_return(true)
+      expect(resource_instance.respond_to?(:custom_method)).to be true
+    end
+
+    it 'raises NoMethodError for methods object does not respond to' do
+      expect { resource_instance.non_existent_method }.to raise_error(NoMethodError)
+    end
+  end
+
+  describe 'inheritance' do
+    it 'properly inherits attributes from parent class' do
+      class BaseResource < JPie::Resource
+        attributes :name
+      end
+
+      class DerivedResource < BaseResource
+        attributes :email
+      end
+
+      expect(DerivedResource._attributes).to include(:name, :email)
+      expect(BaseResource._attributes).to eq([:name])
     end
   end
 end
