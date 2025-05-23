@@ -316,4 +316,147 @@ RSpec.describe JPie::Resource do
       expect(test_resource_class.scope(admin_context)).to eq('admin_access')
     end
   end
+
+  describe 'sorting functionality' do
+    describe '.sortable_fields' do
+      it 'includes all defined attributes by default' do
+        expect(UserResource.sortable_fields).to contain_exactly('name', 'email')
+      end
+
+      it 'includes custom sortable fields' do
+        test_resource_class = Class.new(JPie::Resource) do
+          model User
+          attributes :name, :email
+          sortable_by :popularity
+        end
+
+        expect(test_resource_class.sortable_fields).to contain_exactly('name', 'email', 'popularity')
+      end
+    end
+
+    describe '.sortable_field?' do
+      it 'returns true for defined attributes' do
+        expect(UserResource.sortable_field?(:name)).to be true
+        expect(UserResource.sortable_field?('email')).to be true
+      end
+
+      it 'returns false for undefined fields' do
+        expect(UserResource.sortable_field?(:invalid_field)).to be false
+      end
+
+      it 'returns true for custom sortable fields' do
+        test_resource_class = Class.new(JPie::Resource) do
+          model User
+          attributes :name
+          sortable_by :popularity
+        end
+
+        expect(test_resource_class.sortable_field?(:popularity)).to be true
+      end
+    end
+
+    describe '.sortable_by' do
+      it 'defines a custom sortable field with default column' do
+        test_resource_class = Class.new(JPie::Resource) do
+          model User
+          sortable_by :created_at
+        end
+
+        expect(test_resource_class._sortable_fields[:created_at]).to eq(:created_at)
+      end
+
+      it 'defines a custom sortable field with custom column' do
+        test_resource_class = Class.new(JPie::Resource) do
+          model User
+          sortable_by :popularity, :likes_count
+        end
+
+        expect(test_resource_class._sortable_fields[:popularity]).to eq(:likes_count)
+      end
+
+      it 'defines a custom sortable field with block' do
+        test_resource_class = Class.new(JPie::Resource) do
+          model User
+          sortable_by :popularity do |query, direction|
+            query.order(likes_count: direction)
+          end
+        end
+
+        expect(test_resource_class._sortable_fields[:popularity]).to be_a(Proc)
+      end
+    end
+
+    describe '.sort' do
+      let(:mock_query) { double('ActiveRecord::Relation') }
+
+      before do
+        allow(User).to receive(:all).and_return(mock_query)
+      end
+
+      it 'returns the original query when no sort fields provided' do
+        result = UserResource.sort(mock_query, [])
+        expect(result).to eq(mock_query)
+      end
+
+      it 'sorts by a single field ascending' do
+        expect(mock_query).to receive(:order).with(name: :asc).and_return(mock_query)
+        UserResource.sort(mock_query, ['name'])
+      end
+
+      it 'sorts by a single field descending' do
+        expect(mock_query).to receive(:order).with(name: :desc).and_return(mock_query)
+        UserResource.sort(mock_query, ['-name'])
+      end
+
+      it 'sorts by multiple fields' do
+        expect(mock_query).to receive(:order).with(name: :asc).and_return(mock_query)
+        expect(mock_query).to receive(:order).with(email: :desc).and_return(mock_query)
+        UserResource.sort(mock_query, ['name', '-email'])
+      end
+
+      it 'raises error for invalid sort field' do
+        expect do
+          UserResource.sort(mock_query, ['invalid_field'])
+        end.to raise_error(JPie::Errors::BadRequestError, /Invalid sort field: invalid_field/)
+      end
+
+      context 'with custom sortable field' do
+        let(:custom_resource_class) do
+          Class.new(JPie::Resource) do
+            model User
+            attributes :name
+            sortable_by :popularity, :likes_count
+          end
+        end
+
+        it 'sorts by custom column name' do
+          expect(mock_query).to receive(:order).with(likes_count: :asc).and_return(mock_query)
+          custom_resource_class.sort(mock_query, ['popularity'])
+        end
+      end
+
+      context 'with custom sortable block' do
+        let(:block_resource_class) do
+          Class.new(JPie::Resource) do
+            model User
+            attributes :name
+
+            sortable_by :popularity do |query, direction|
+              query.order(likes_count: direction, name: :asc)
+            end
+          end
+        end
+
+        it 'applies custom sorting logic' do
+          expect(mock_query).to receive(:order).with(likes_count: :asc, name: :asc).and_return(mock_query)
+          block_resource_class.sort(mock_query, ['popularity'])
+        end
+
+        it 'passes correct direction to block' do
+          expect(mock_query).to receive(:order).with(likes_count: :desc, name: :asc).and_return(mock_query)
+          block_resource_class.sort(mock_query, ['-popularity'])
+        end
+      end
+    end
+  end
 end
