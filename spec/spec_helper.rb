@@ -40,7 +40,7 @@ RSpec.configure do |config|
   Kernel.srand config.seed
 
   # Clean database between tests
-  config.before(:each) do
+  config.before do
     ActiveRecord::Base.connection.tables.each do |table|
       next if table == 'schema_migrations'
 

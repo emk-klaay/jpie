@@ -70,7 +70,7 @@ RSpec.describe JPie::Serializer do
       it 'includes correct data for each item' do
         first_item = result[:data].first
         second_item = result[:data].last
-        
+
         expect(first_item[:id]).to eq(model_collection.first.id.to_s)
         expect(first_item[:type]).to eq('users')
         expect(first_item[:attributes]['name']).to eq('John Doe')

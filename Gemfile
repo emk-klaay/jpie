@@ -17,8 +17,8 @@ group :development, :test do
 end
 
 group :test do
+  gem 'ostruct', '~> 0.6.0'
   gem 'rails', '~> 8.0'
   gem 'simplecov', '~> 0.22.0', require: false
   gem 'sqlite3', '~> 2.1'
-  gem 'ostruct', '~> 0.6.0'
 end
