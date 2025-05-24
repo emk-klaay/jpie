@@ -10,6 +10,7 @@ JPie is a modern, lightweight Rails library for developing JSON:API compliant se
 ✨ **Modern Rails DSL** - Clean, intuitive syntax following Rails conventions  
 🔧 **Method Overrides** - Define custom attribute methods directly on resource classes  
 🎯 **Smart Inference** - Automatic model and resource class detection  
+⚡ **Powerful Generators** - Scaffold resources with relationships, meta attributes, and automatic inference  
 📊 **Polymorphic Support** - Full support for complex polymorphic associations  
 🔄 **STI Ready** - Single Table Inheritance works out of the box  
 ⚡ **Performance Optimized** - Efficient serialization with intelligent deduplication  
@@ -62,6 +63,201 @@ end
 ```
 
 That's it! You now have a fully functional JSON:API compliant server.
+
+## Generators
+
+JPie provides powerful generators to help you quickly scaffold resources with all the features you need. The generators follow Rails conventions and leverage JPie's automatic inference capabilities.
+
+### Resource Generator
+
+Generate a complete JPie resource class with attributes, relationships, and meta attributes:
+
+```bash
+rails generate jpie:resource User name:string email:string
+```
+
+#### Basic Usage
+
+```bash
+# Basic resource with attributes
+rails generate jpie:resource User name:string email:string
+
+# Generates:
+# app/resources/user_resource.rb
+```
+
+**Generated file:**
+```ruby
+# frozen_string_literal: true
+
+class UserResource < JPie::Resource
+  attributes :name, :email
+
+  # Define your meta attributes here:
+  # meta_attributes :created_at, :updated_at
+
+  # Define your relationships here:
+  # has_many :posts
+  # has_one :user
+end
+```
+
+#### Advanced Options
+
+##### Model Specification
+
+By default, JPie uses automatic model inference (`UserResource` → `User`). Override when needed:
+
+```bash
+# Use a different model class
+rails generate jpie:resource User name:string --model=Person
+```
+
+**Generated file:**
+```ruby
+class UserResource < JPie::Resource
+  model Person  # Explicit model declaration
+
+  attributes :name
+  
+  # ... rest of the resource
+end
+```
+
+##### Relationships with Automatic Inference
+
+Generate relationships that automatically infer resource classes:
+
+```bash
+# Generate relationships (comma-separated)
+rails generate jpie:resource User name:string \
+  --relationships=has_many:posts,has_one:profile,has_many:comments
+```
+
+**Generated file:**
+```ruby
+class UserResource < JPie::Resource
+  attributes :name
+
+  # Define your meta attributes here:
+  # meta_attributes :created_at, :updated_at
+
+  has_many :posts      # Automatically infers PostResource
+  has_one :profile     # Automatically infers ProfileResource  
+  has_many :comments   # Automatically infers CommentResource
+end
+```
+
+##### Meta Attributes
+
+JPie automatically detects common meta attributes and supports explicit specification:
+
+```bash
+# Automatic detection of meta attributes
+rails generate jpie:resource User name:string created_at:datetime updated_at:datetime
+
+# Explicit meta attributes
+rails generate jpie:resource User name:string --meta-attributes=created_at,updated_at,last_login_at
+
+# Combination (auto-detected + explicit)
+rails generate jpie:resource User name:string published_at:datetime \
+  --meta-attributes=created_at,updated_at
+```
+
+**Generated file:**
+```ruby
+class UserResource < JPie::Resource
+  attributes :name
+
+  meta_attributes :created_at, :updated_at, :published_at
+
+  # Define your relationships here:
+  # has_many :posts
+  # has_one :user
+end
+```
+
+**Auto-detected meta attributes:** `created_at`, `updated_at`, `deleted_at`, `published_at`
+
+##### Skip Model Declaration
+
+Force JPie to use automatic model inference (useful for consistent style):
+
+```bash
+rails generate jpie:resource User name:string --skip-model
+```
+
+#### Comprehensive Example
+
+Generate a fully-featured resource with all options:
+
+```bash
+rails generate jpie:resource Post \
+  title:string \
+  content:text \
+  published_at:datetime \
+  --model=Article \
+  --meta-attributes=created_at,updated_at,view_count \
+  --relationships=has_one:author,has_many:comments,has_many:tags
+```
+
+**Generated file:**
+```ruby
+# frozen_string_literal: true
+
+class PostResource < JPie::Resource
+  model Article
+
+  attributes :title, :content
+
+  meta_attributes :created_at, :updated_at, :view_count, :published_at
+
+  has_one :author
+  has_many :comments
+  has_many :tags
+end
+```
+
+#### Generator Options Reference
+
+| Option | Type | Description | Example |
+|--------|------|-------------|---------|
+| `--model=NAME` | String | Specify model class (overrides inference) | `--model=Person` |
+| `--relationships=LIST` | Array | Comma-separated relationships | `--relationships=has_many:posts,has_one:user` |
+| `--meta-attributes=LIST` | Array | Comma-separated meta attributes | `--meta-attributes=created_at,updated_at` |
+| `--skip-model` | Boolean | Skip explicit model declaration | `--skip-model` |
+
+#### Relationship Syntax
+
+Relationships support the full `has_many` and `has_one` syntax with automatic resource inference:
+
+```bash
+# Relationship types
+--relationships=has_many:posts              # has_many :posts
+--relationships=has_one:profile             # has_one :profile  
+--relationships=has_many:posts,has_one:user # Multiple relationships
+
+# JPie automatically infers resource classes:
+# has_many :posts     → PostResource
+# has_one :profile    → ProfileResource
+# has_many :comments  → CommentResource
+```
+
+#### Best Practices
+
+1. **Use automatic inference by default** - Let JPie infer models and resources
+2. **Specify explicit models only when needed** - Override only for non-standard naming
+3. **Group related attributes** - Generate resources with logical attribute groupings
+4. **Leverage meta attribute detection** - Use standard Rails timestamp names for automatic detection
+
+#### Generated File Structure
+
+The generator creates clean, well-structured resource files with:
+
+- **Automatic model inference** (no explicit `model` declaration unless needed)
+- **Grouped sections** (attributes, meta attributes, relationships)
+- **Helpful comments** showing examples when sections are empty
+- **Modern JPie DSL** using the latest syntax and conventions
 
 ## Modern DSL Examples
 
