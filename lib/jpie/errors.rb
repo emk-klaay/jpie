@@ -60,5 +60,11 @@ module JPie
         super(status: 500, title: 'Internal Server Error', detail:)
       end
     end
+
+    class ResourceError < Error
+      def initialize(detail:)
+        super(status: 500, title: 'Resource Error', detail:)
+      end
+    end
   end
 end

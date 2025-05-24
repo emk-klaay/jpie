@@ -3,6 +3,7 @@
 require_relative 'resource/attributable'
 require_relative 'resource/inferrable'
 require_relative 'resource/sortable'
+require_relative 'errors'
 
 module JPie
   class Resource
@@ -56,6 +57,34 @@ module JPie
     end
 
     def meta_hash
+      # Start with meta attributes from the macro
+      base_meta = self.class._meta_attributes.index_with do
+        public_send(it)
+      end
+
+      # Check if the resource defines a custom meta method
+      if respond_to?(:meta, true) && method(:meta).owner != JPie::Resource
+        custom_meta = meta
+
+        # Validate that meta method returns a hash
+        unless custom_meta.is_a?(Hash)
+          raise JPie::Errors::ResourceError.new(
+            detail: "meta method must return a Hash, got #{custom_meta.class}"
+          )
+        end
+
+        # Merge custom meta with base meta (custom meta takes precedence)
+        base_meta.merge(custom_meta)
+      else
+        base_meta
+      end
+    end
+
+    protected
+
+    # Default meta method that returns the meta attributes
+    # This can be overridden in subclasses
+    def meta
       self.class._meta_attributes.index_with do
         public_send(it)
       end

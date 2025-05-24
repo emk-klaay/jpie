@@ -215,12 +215,101 @@ class UserResource < JPie::Resource
 
 ### Meta attributes
 
+JPie supports adding meta data to your JSON:API resources in two ways: using the `meta_attributes` macro or by defining a custom `meta` method.
+
+#### Using meta_attributes Macro
+
 It's easy to add meta attributes:
 
 ```ruby
 class UserResource < JPie::Resource
   meta_attributes :created_at, :updated_at
   meta_attributes :last_login_at
+end
+```
+
+#### Using Custom meta Method
+
+For more complex meta data, you can define a `meta` method that returns a hash:
+
+```ruby
+class UserResource < JPie::Resource
+  attributes :name, :email
+  meta_attributes :created_at, :updated_at
+
+  def meta
+    super.merge(
+      full_name: "#{object.first_name} #{object.last_name}",
+      user_role: context[:current_user]&.role || 'guest',
+      account_status: object.active? ? 'active' : 'inactive',
+      last_seen: object.last_login_at&.iso8601
+    )
+  end
+end
+```
+
+The `meta` method has access to:
+- `super` - returns the hash from `meta_attributes` 
+- `object` - the underlying model instance
+- `context` - any context passed during resource initialization
+
+**Example JSON:API Response with Custom Meta:**
+
+```json
+{
+  "data": {
+    "id": "1",
+    "type": "users",
+    "attributes": {
+      "name": "John Doe",
+      "email": "john@example.com"
+    },
+    "meta": {
+      "created_at": "2024-01-01T12:00:00Z",
+      "updated_at": "2024-01-15T14:30:00Z",
+      "full_name": "John Doe",
+      "user_role": "admin",
+      "account_status": "active",
+      "last_seen": "2024-01-15T14:00:00Z"
+    }
+  }
+}
+```
+
+#### Meta Method Inheritance
+
+Meta methods work seamlessly with inheritance:
+
+```ruby
+class BaseResource < JPie::Resource
+  meta_attributes :created_at, :updated_at
+
+  def meta
+    super.merge(
+      resource_version: '1.0',
+      timestamp: Time.current.iso8601
+    )
+  end
+end
+
+class UserResource < BaseResource
+  attributes :name, :email
+  meta_attributes :last_login_at
+
+  def meta
+    super.merge(
+      user_specific_data: calculate_user_metrics
+    )
+  end
+
+  private
+
+  def calculate_user_metrics
+    {
+      post_count: object.posts.count,
+      comment_count: object.comments.count
+    }
+  end
 end
 ```
 
