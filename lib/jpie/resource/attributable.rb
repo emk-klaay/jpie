@@ -13,36 +13,20 @@ module JPie
       end
 
       class_methods do
-        def attribute(name, options = {})
+        def attribute(name, options = {}, &)
           name = name.to_sym
           _attributes << name unless _attributes.include?(name)
-
-          define_method(name) do
-            if options[:block]
-              instance_exec(&options[:block])
-            else
-              attr_name = options[:attr] || name
-              @object.public_send(attr_name)
-            end
-          end
+          define_attribute_method(name, options, &)
         end
 
         def attributes(*names)
           names.each { attribute(it) }
         end
 
-        def meta_attribute(name, options = {})
+        def meta_attribute(name, options = {}, &)
           name = name.to_sym
           _meta_attributes << name unless _meta_attributes.include?(name)
-
-          define_method(name) do
-            if options[:block]
-              instance_exec(&options[:block])
-            else
-              attr_name = options[:attr] || name
-              @object.public_send(attr_name)
-            end
-          end
+          define_attribute_method(name, options, &)
         end
 
         def meta_attributes(*names)
@@ -52,6 +36,9 @@ module JPie
         def relationship(name, options = {})
           name = name.to_sym
           _relationships[name] = options
+
+          # Check if method is already defined (public or private) to allow custom implementations
+          return if method_defined?(name) || private_method_defined?(name)
 
           define_method(name) do
             attr_name = options[:attr] || name
@@ -72,6 +59,27 @@ module JPie
         end
 
         private
+
+        def define_attribute_method(name, options, &)
+          # If a block is provided, use it (existing behavior)
+          if block_given?
+            define_method(name) do
+              instance_exec(&)
+            end
+          # If options[:block] is provided, use it (existing behavior)
+          elsif options[:block]
+            define_method(name) do
+              instance_exec(&options[:block])
+            end
+          # If method is not already defined on the resource (public or private), define the default implementation
+          elsif !method_defined?(name) && !private_method_defined?(name)
+            define_method(name) do
+              attr_name = options[:attr] || name
+              @object.public_send(attr_name)
+            end
+          end
+          # If method is already defined, don't override it - let the custom method handle it
+        end
 
         def infer_resource_class_name(relationship_name)
           # Convert relationship name to resource class name

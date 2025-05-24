@@ -195,7 +195,9 @@ end
 
 ### Custom Attributes
 
-Add computed or transformed attributes to your resources:
+Add computed or transformed attributes to your resources using either blocks or method overrides:
+
+#### Using Blocks (Original Approach)
 
 ```ruby
 class UserResource < JPie::Resource
@@ -210,8 +212,56 @@ class UserResource < JPie::Resource
       nil
     end
   end
-  end
+end
 ```
+
+#### Using Method Overrides (New Approach)
+
+You can now define custom methods directly on your resource class instead of using blocks:
+
+```ruby
+class UserResource < JPie::Resource
+  attributes :name, :email
+  attribute :full_name
+  attribute :display_name
+  meta_attribute :user_stats
+
+  private
+
+  def full_name
+    "#{object.first_name} #{object.last_name}"
+  end
+
+  def display_name
+    if context[:admin]
+      "#{full_name} [ADMIN VIEW] - #{object.email}"
+    else
+      full_name
+    end
+  end
+
+  def user_stats
+    {
+      name_length: object.name.length,
+      email_domain: object.email.split('@').last,
+      account_status: object.active? ? 'active' : 'inactive'
+    }
+  end
+end
+```
+
+**Key Benefits of Method Overrides:**
+- **Cleaner syntax** - No need for blocks
+- **Better IDE support** - Full method definitions with proper syntax highlighting
+- **Easier testing** - Methods can be tested individually
+- **Private methods supported** - Use private methods for internal logic
+- **Access to object and context** - Full access to `object` and `context` like blocks
+
+**Method Precedence:**
+1. **Blocks** (highest priority) - `attribute :name do ... end`
+2. **Options blocks** - `attribute :name, block: proc { ... }`
+3. **Custom methods** - `def name; ...; end`
+4. **Model attributes** (lowest priority) - Direct model attribute lookup
 
 ### Meta attributes
 

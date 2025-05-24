@@ -52,14 +52,14 @@ module JPie
 
     def attributes_hash
       self.class._attributes.index_with do
-        public_send(it)
+        send(it)
       end
     end
 
     def meta_hash
       # Start with meta attributes from the macro
       base_meta = self.class._meta_attributes.index_with do
-        public_send(it)
+        send(it)
       end
 
       # Check if the resource defines a custom meta method
@@ -86,7 +86,7 @@ module JPie
     # This can be overridden in subclasses
     def meta
       self.class._meta_attributes.index_with do
-        public_send(it)
+        send(it)
       end
     end
 
