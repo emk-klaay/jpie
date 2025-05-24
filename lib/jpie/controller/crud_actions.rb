@@ -10,6 +10,9 @@ module JPie
           setup_jsonapi_resource(resource_class)
         end
 
+        # More concise alias for modern Rails style
+        alias_method :resource, :jsonapi_resource
+
         private
 
         def setup_jsonapi_resource(resource_class)
@@ -34,14 +37,14 @@ module JPie
             resources = resource_class.scope(context)
             sort_fields = parse_sort_params
             resources = resource_class.sort(resources, sort_fields) if sort_fields.any?
-            render_jsonapi_resources(resources)
+            render_jsonapi(resources)
           end
         end
 
         def define_show_method(resource_class)
           define_method :show do
             resource = resource_class.scope(context).find(params[:id])
-            render_jsonapi_resource(resource)
+            render_jsonapi(resource)
           end
         end
 
@@ -49,7 +52,7 @@ module JPie
           define_method :create do
             attributes = deserialize_params
             resource = resource_class.model.create!(attributes)
-            render_jsonapi_resource(resource, status: :created)
+            render_jsonapi(resource, status: :created)
           end
         end
 
@@ -58,7 +61,7 @@ module JPie
             resource = resource_class.scope(context).find(params[:id])
             attributes = deserialize_params
             resource.update!(attributes)
-            render_jsonapi_resource(resource)
+            render_jsonapi(resource)
           end
         end
 
@@ -76,25 +79,25 @@ module JPie
         resources = resource_class.scope(context)
         sort_fields = parse_sort_params
         resources = resource_class.sort(resources, sort_fields) if sort_fields.any?
-        render_jsonapi_resources(resources)
+        render_jsonapi(resources)
       end
 
       def show
         resource = resource_class.scope(context).find(params[:id])
-        render_jsonapi_resource(resource)
+        render_jsonapi(resource)
       end
 
       def create
         attributes = deserialize_params
         resource = model_class.create!(attributes)
-        render_jsonapi_resource(resource, status: :created)
+        render_jsonapi(resource, status: :created)
       end
 
       def update
         resource = resource_class.scope(context).find(params[:id])
         attributes = deserialize_params
         resource.update!(attributes)
-        render_jsonapi_resource(resource)
+        render_jsonapi(resource)
       end
 
       def destroy

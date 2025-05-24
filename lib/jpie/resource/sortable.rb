@@ -27,6 +27,9 @@ module JPie
           _sortable_fields[field] = block || column || field
         end
 
+        # More concise alias for modern Rails style
+        alias_method :sortable, :sortable_by
+
         # Apply sorting to a query based on sort parameters
         # sort_fields: array of sort field strings (e.g., ['name', '-created_at'])
         def sort(query, sort_fields)

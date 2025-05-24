@@ -300,25 +300,25 @@ RSpec.describe JPie::Controller do
 
   describe 'rendering with meta' do
     it 'includes meta in single resource response' do
-      controller.send(:render_jsonapi_resource, User.new, meta: { total: 1 })
+      controller.send(:render_jsonapi, User.new, meta: { total: 1 })
 
       expect(controller.last_render[:json]).to have_key(:meta)
     end
 
     it 'includes correct meta data in single resource response' do
-      controller.send(:render_jsonapi_resource, User.new, meta: { total: 1 })
+      controller.send(:render_jsonapi, User.new, meta: { total: 1 })
 
       expect(controller.last_render[:json][:meta]).to eq({ total: 1 })
     end
 
     it 'includes meta in collection response' do
-      controller.send(:render_jsonapi_resources, [User.new], meta: { total: 1 })
+      controller.send(:render_jsonapi, [User.new], meta: { total: 1 })
 
       expect(controller.last_render[:json]).to have_key(:meta)
     end
 
     it 'includes correct meta data in collection response' do
-      controller.send(:render_jsonapi_resources, [User.new], meta: { total: 1 })
+      controller.send(:render_jsonapi, [User.new], meta: { total: 1 })
 
       expect(controller.last_render[:json][:meta]).to eq({ total: 1 })
     end
@@ -414,7 +414,7 @@ RSpec.describe JPie::Controller do
       scoped_relation = double('scoped_relation')
       expected_context = { current_user: nil, controller: scoped_controller, action: 'test' }
       expect(scoped_controller.resource_class).to receive(:scope).with(expected_context).and_return(scoped_relation)
-      expect(scoped_controller).to receive(:render_jsonapi_resources).with(scoped_relation)
+      expect(scoped_controller).to receive(:render_jsonapi).with(scoped_relation)
 
       scoped_controller.index
     end
@@ -427,7 +427,7 @@ RSpec.describe JPie::Controller do
 
       expect(scoped_controller.resource_class).to receive(:scope).with(expected_context).and_return(scoped_relation)
       expect(scoped_relation).to receive(:find).with('123').and_return(record)
-      expect(scoped_controller).to receive(:render_jsonapi_resource).with(record)
+      expect(scoped_controller).to receive(:render_jsonapi).with(record)
 
       scoped_controller.show
     end
@@ -442,7 +442,7 @@ RSpec.describe JPie::Controller do
       expect(scoped_relation).to receive(:find).with('123').and_return(record)
       expect(scoped_controller).to receive(:deserialize_params).and_return({})
       expect(record).to receive(:update!).with({})
-      expect(scoped_controller).to receive(:render_jsonapi_resource).with(record)
+      expect(scoped_controller).to receive(:render_jsonapi).with(record)
 
       scoped_controller.update
     end

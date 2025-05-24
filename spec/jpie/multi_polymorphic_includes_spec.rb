@@ -171,7 +171,7 @@ RSpec.describe 'Multiple Polymorphic Includes in Single Request' do
         attr_reader :last_render
 
         # Make protected method public for testing
-        public :render_jsonapi_resource
+        public :render_jsonapi
 
         private
 
@@ -222,7 +222,7 @@ RSpec.describe 'Multiple Polymorphic Includes in Single Request' do
       expect(includes).to eq(['tags', 'comments', 'comments.tags'])
 
       # Test that the includes are properly processed in rendering
-      controller.render_jsonapi_resource(post1)
+      controller.render_jsonapi(post1)
 
       expect(controller.last_render).to have_key(:json)
       result = controller.last_render[:json]

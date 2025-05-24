@@ -33,6 +33,10 @@ module JPie
           names.each { meta_attribute(it) }
         end
 
+        # More concise aliases for modern Rails style
+        alias_method :meta, :meta_attribute
+        alias_method :metas, :meta_attributes
+
         def relationship(name, options = {})
           name = name.to_sym
           _relationships[name] = options

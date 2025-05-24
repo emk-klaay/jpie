@@ -5,6 +5,17 @@
 
 JPie is a modern, lightweight Rails library for developing JSON:API compliant servers. It focuses on clean architecture with strong separation of concerns and extensibility.
 
+## Key Features
+
+✨ **Modern Rails DSL** - Clean, intuitive syntax following Rails conventions  
+🔧 **Method Overrides** - Define custom attribute methods directly on resource classes  
+🎯 **Smart Inference** - Automatic model and resource class detection  
+📊 **Polymorphic Support** - Full support for complex polymorphic associations  
+🔄 **STI Ready** - Single Table Inheritance works out of the box  
+⚡ **Performance Optimized** - Efficient serialization with intelligent deduplication  
+🛡️ **Authorization Ready** - Built-in scoping support for security  
+📋 **JSON:API Compliant** - Full specification compliance with sorting, includes, and meta  
+
 ## Installation
 
 Add JPie to your Rails application:
@@ -39,7 +50,7 @@ end
 ```ruby
 class UsersController < ApplicationController
   include JPie::Controller
-  end
+end
 ```
 
 ### 4. Set Up Routes
@@ -47,6 +58,73 @@ class UsersController < ApplicationController
 ```ruby
 Rails.application.routes.draw do
   resources :users
+end
+```
+
+That's it! You now have a fully functional JSON:API compliant server.
+
+## Modern DSL Examples
+
+JPie provides a clean, modern DSL that follows Rails conventions:
+
+### Resource Definition
+
+```ruby
+class UserResource < JPie::Resource
+  # Attributes (multiple syntaxes supported)
+  attributes :name, :email, :created_at
+  attribute :full_name
+  
+  # Meta attributes
+  meta :account_status, :last_login
+  # or: meta_attributes :account_status, :last_login
+  
+  # Relationships
+  has_many :posts
+  has_one :profile
+  
+  # Custom sorting
+  sortable :popularity do |query, direction|
+    query.order(likes_count: direction)
+  end
+  # or: sortable_by :popularity do |query, direction|
+  
+  # Custom attribute methods
+  private
+  
+  def full_name
+    "#{object.first_name} #{object.last_name}"
+  end
+  
+  def account_status
+    object.active? ? 'active' : 'inactive'
+  end
+end
+```
+
+### Controller Definition
+
+```ruby
+class UsersController < ApplicationController
+  include JPie::Controller
+  
+  # Explicit resource (optional - auto-inferred by default)
+  resource UserResource
+  # or: jsonapi_resource UserResource
+  
+  # Override methods as needed
+  def index
+    users = current_user.admin? ? User.all : User.active
+    render_jsonapi(users)
+  end
+  
+  def create
+    user = User.new(deserialize_params)
+    user.created_by = current_user
+    user.save!
+    
+    render_jsonapi(user, status: :created)
+  end
 end
 ```
 
@@ -143,7 +221,8 @@ end
 # Explicit resource specification (override)
 class UsersController < ApplicationController
   include JPie::Controller
-  jsonapi_resource CustomUserResource  # Use a different resource class
+  resource UserResource  # Use a different resource class (modern syntax)
+  # or: jsonapi_resource UserResource  # (backward compatible syntax)
 end
 ```
 
@@ -176,7 +255,7 @@ class UsersController < ApplicationController
   # Override index to add filtering
   def index
     users = User.where(active: true)
-    render_jsonapi_resources(users)
+    render_jsonapi(users)
   end
   
   # Override create to add custom logic
@@ -186,7 +265,7 @@ class UsersController < ApplicationController
     user.created_by = current_user
     user.save!
     
-    render_jsonapi_resource(user, status: :created)
+    render_jsonapi(user, status: :created)
   end
   
   # show, update, destroy still use the automatic implementations

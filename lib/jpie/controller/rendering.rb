@@ -22,21 +22,18 @@ module JPie
         resource_class.model
       end
 
-      def render_jsonapi_resource(resource, status: :ok, meta: nil)
+      # More concise method names following Rails conventions
+      def render_jsonapi(resource_or_resources, status: :ok, meta: nil)
         includes = parse_include_params
-        json_data = serializer.serialize(resource, context, includes: includes)
+        json_data = serializer.serialize(resource_or_resources, context, includes: includes)
         json_data[:meta] = meta if meta
 
         render json: json_data, status:, content_type: 'application/vnd.api+json'
       end
 
-      def render_jsonapi_resources(resources, status: :ok, meta: nil)
-        includes = parse_include_params
-        json_data = serializer.serialize(resources, context, includes: includes)
-        json_data[:meta] = meta if meta
-
-        render json: json_data, status:, content_type: 'application/vnd.api+json'
-      end
+      # Keep original methods for backward compatibility
+      alias render_jsonapi_resource render_jsonapi
+      alias render_jsonapi_resources render_jsonapi
 
       private
 
