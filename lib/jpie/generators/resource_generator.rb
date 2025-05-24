@@ -7,16 +7,13 @@ module JPie
     class ResourceGenerator < Rails::Generators::NamedBase
       source_root File.expand_path('templates', __dir__)
 
-      desc 'Generate a JPie resource class'
+      desc 'Generate a JPie resource class with semantic field definitions'
 
-      argument :attributes, type: :array, default: [], banner: 'field:type field:type'
+      argument :field_definitions, type: :array, default: [],
+                                   banner: 'attribute:field meta:field relationship:type:field'
 
       class_option :model, type: :string,
                            desc: 'Model class to associate with this resource (defaults to inferred model)'
-      class_option :relationships, type: :array, default: [],
-                                   desc: 'Relationships to include (e.g., has_many:posts has_one:user)'
-      class_option :meta_attributes, type: :array, default: [],
-                                     desc: 'Meta attributes to include (e.g., created_at updated_at)'
       class_option :skip_model, type: :boolean, default: false,
                                 desc: 'Skip explicit model declaration (use automatic inference)'
 
@@ -42,40 +39,77 @@ module JPie
       end
 
       def resource_attributes
-        return [] if attributes.empty?
-
-        # Parse attributes and separate regular attributes from meta attributes
-        attributes.reject { |attr| meta_attribute?(attr) }.map(&:name)
+        parse_field_definitions.fetch(:attributes, [])
       end
 
       def meta_attributes_list
-        # Combine CLI meta attributes with attributes marked as meta
-        cli_meta = options[:meta_attributes] || []
-        parsed_meta = attributes.select { |attr| meta_attribute?(attr) }.map(&:name)
-
-        (cli_meta + parsed_meta).uniq
+        parse_field_definitions.fetch(:meta_attributes, [])
       end
 
       def relationships_list
-        options[:relationships] || []
+        parse_field_definitions.fetch(:relationships, [])
       end
 
       def parse_relationships
         relationships_list.map do |rel|
-          if rel.include?(':')
-            type, name = rel.split(':', 2)
-            { type: type, name: name }
-          else
-            # Default to has_many if no type specified
-            { type: 'has_many', name: rel }
-          end
+          # rel is already a hash with :type and :name from parse_field_definitions
+          rel
         end
       end
 
-      def meta_attribute?(attr)
-        # Check if attribute name suggests it's a meta attribute
-        meta_names = %w[created_at updated_at deleted_at published_at]
-        meta_names.include?(attr.name)
+      def parse_field_definitions
+        return @parsed_definitions if @parsed_definitions
+
+        @parsed_definitions = { attributes: [], meta_attributes: [], relationships: [] }
+
+        field_definitions.each do |definition|
+          process_field_definition(definition)
+        end
+
+        @parsed_definitions
+      end
+
+      def process_field_definition(definition)
+        case definition
+        when /^attribute:(.+)$/
+          @parsed_definitions[:attributes] << ::Regexp.last_match(1)
+        when /^meta:(.+)$/
+          @parsed_definitions[:meta_attributes] << ::Regexp.last_match(1)
+        when /^relationship:(.+):(.+)$/, /^(has_many|has_one|belongs_to):(.+)$/
+          add_relationship(::Regexp.last_match(1), ::Regexp.last_match(2))
+        when /^(.+):(.+)$/
+          process_legacy_field(::Regexp.last_match(1))
+        else
+          process_plain_field(definition)
+        end
+      end
+
+      def add_relationship(type, name)
+        @parsed_definitions[:relationships] << { type: type, name: name }
+      end
+
+      def process_legacy_field(field_name)
+        # Legacy support: field:type format - treat as attribute and ignore type
+        if meta_attribute_name?(field_name)
+          @parsed_definitions[:meta_attributes] << field_name
+        else
+          @parsed_definitions[:attributes] << field_name
+        end
+      end
+
+      def process_plain_field(field_name)
+        # Plain field name - treat as attribute
+        if meta_attribute_name?(field_name)
+          @parsed_definitions[:meta_attributes] << field_name
+        else
+          @parsed_definitions[:attributes] << field_name
+        end
+      end
+
+      def meta_attribute_name?(name)
+        # Check if field name suggests it's a meta attribute
+        meta_names = %w[created_at updated_at deleted_at published_at archived_at]
+        meta_names.include?(name)
       end
     end
   end

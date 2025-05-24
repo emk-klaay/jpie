@@ -66,24 +66,21 @@ That's it! You now have a fully functional JSON:API compliant server.
 
 ## Generators
 
-JPie provides powerful generators to help you quickly scaffold resources with all the features you need. The generators follow Rails conventions and leverage JPie's automatic inference capabilities.
+JPie includes a resource generator for quickly creating new resource classes with proper JSON:API structure.
 
-### Resource Generator
+### Basic Usage
 
-Generate a complete JPie resource class with attributes, relationships, and meta attributes:
-
-```bash
-rails generate jpie:resource User name:string email:string
-```
-
-#### Basic Usage
+The generator uses semantic field definitions that explicitly categorize each field by its JSON:API purpose:
 
 ```bash
-# Basic resource with attributes
-rails generate jpie:resource User name:string email:string
+# Generate a basic resource with semantic syntax
+rails generate jpie:resource User attribute:name attribute:email meta:created_at
 
-# Generates:
-# app/resources/user_resource.rb
+# Shorthand for relationships
+rails generate jpie:resource Post attribute:title attribute:content has_many:comments has_one:author
+
+# Mix explicit categorization with auto-detection
+rails generate jpie:resource User attribute:name email created_at updated_at
 ```
 
 **Generated file:**
@@ -93,124 +90,52 @@ rails generate jpie:resource User name:string email:string
 class UserResource < JPie::Resource
   attributes :name, :email
 
-  # Define your meta attributes here:
-  # meta_attributes :created_at, :updated_at
+  meta_attributes :created_at, :updated_at
 
-  # Define your relationships here:
-  # has_many :posts
-  # has_one :user
+  has_many :comments
+  has_one :author
 end
 ```
 
-#### Advanced Options
+### Semantic Field Syntax
 
-##### Model Specification
+The generator uses a semantic approach focused on JSON:API concepts rather than database types:
 
-By default, JPie uses automatic model inference (`UserResource` → `User`). Override when needed:
+| Syntax | Purpose | Example |
+|--------|---------|---------|
+| `attribute:field` | Regular JSON:API attribute | `attribute:name` |
+| `meta:field` | JSON:API meta attribute | `meta:created_at` |
+| `has_many:resource` | JSON:API relationship | `has_many:posts` |
+| `has_one:resource` | JSON:API relationship | `has_one:profile` |
+| `relationship:type:resource` | Explicit relationship | `relationship:has_many:posts` |
 
-```bash
-# Use a different model class
-rails generate jpie:resource User name:string --model=Person
-```
+### Advanced Examples
 
-**Generated file:**
-```ruby
-class UserResource < JPie::Resource
-  model Person  # Explicit model declaration
-
-  attributes :name
-  
-  # ... rest of the resource
-end
-```
-
-##### Relationships with Automatic Inference
-
-Generate relationships that automatically infer resource classes:
+##### Comprehensive Resource
 
 ```bash
-# Generate relationships (comma-separated)
-rails generate jpie:resource User name:string \
-  --relationships=has_many:posts,has_one:profile,has_many:comments
-```
-
-**Generated file:**
-```ruby
-class UserResource < JPie::Resource
-  attributes :name
-
-  # Define your meta attributes here:
-  # meta_attributes :created_at, :updated_at
-
-  has_many :posts      # Automatically infers PostResource
-  has_one :profile     # Automatically infers ProfileResource  
-  has_many :comments   # Automatically infers CommentResource
-end
-```
-
-##### Meta Attributes
-
-JPie automatically detects common meta attributes and supports explicit specification:
-
-```bash
-# Automatic detection of meta attributes
-rails generate jpie:resource User name:string created_at:datetime updated_at:datetime
-
-# Explicit meta attributes
-rails generate jpie:resource User name:string --meta-attributes=created_at,updated_at,last_login_at
-
-# Combination (auto-detected + explicit)
-rails generate jpie:resource User name:string published_at:datetime \
-  --meta-attributes=created_at,updated_at
-```
-
-**Generated file:**
-```ruby
-class UserResource < JPie::Resource
-  attributes :name
-
-  meta_attributes :created_at, :updated_at, :published_at
-
-  # Define your relationships here:
-  # has_many :posts
-  # has_one :user
-end
-```
-
-**Auto-detected meta attributes:** `created_at`, `updated_at`, `deleted_at`, `published_at`
-
-##### Skip Model Declaration
-
-Force JPie to use automatic model inference (useful for consistent style):
-
-```bash
-rails generate jpie:resource User name:string --skip-model
-```
-
-#### Comprehensive Example
-
-Generate a fully-featured resource with all options:
-
-```bash
-rails generate jpie:resource Post \
-  title:string \
-  content:text \
-  published_at:datetime \
-  --model=Article \
-  --meta-attributes=created_at,updated_at,view_count \
-  --relationships=has_one:author,has_many:comments,has_many:tags
+rails generate jpie:resource Article \
+  attribute:title \
+  attribute:content \
+  meta:published_at \
+  meta:created_at \
+  meta:updated_at \
+  has_one:author \
+  has_many:comments \
+  has_many:tags \
+  --model=Post
 ```
 
 **Generated file:**
 ```ruby
 # frozen_string_literal: true
 
-class PostResource < JPie::Resource
-  model Article
+class ArticleResource < JPie::Resource
+  model Post
 
   attributes :title, :content
 
-  meta_attributes :created_at, :updated_at, :view_count, :published_at
+  meta_attributes :published_at, :created_at, :updated_at
 
   has_one :author
   has_many :comments
@@ -218,46 +143,60 @@ class PostResource < JPie::Resource
 end
 ```
 
-#### Generator Options Reference
+##### Empty Resource Template
+
+```bash
+rails generate jpie:resource User
+```
+
+**Generated file:**
+```ruby
+# frozen_string_literal: true
+
+class UserResource < JPie::Resource
+  # Define your attributes here:
+  # attributes :name, :email, :title
+
+  # Define your meta attributes here:
+  # meta_attributes :created_at, :updated_at
+
+  # Define your relationships here:
+  # has_many :posts
+  # has_one :user
+end
+```
+
+### Legacy Syntax Support
+
+The generator maintains backward compatibility with the Rails-style `field:type` syntax, but ignores the type portion:
+
+```bash
+# Legacy syntax (still works, types ignored)
+rails generate jpie:resource User name:string email:string created_at:datetime
+```
+
+This generates the same output as the semantic syntax, with automatic detection of meta attributes based on common field names.
+
+### Generator Options
 
 | Option | Type | Description | Example |
 |--------|------|-------------|---------|
 | `--model=NAME` | String | Specify model class (overrides inference) | `--model=Person` |
-| `--relationships=LIST` | Array | Comma-separated relationships | `--relationships=has_many:posts,has_one:user` |
-| `--meta-attributes=LIST` | Array | Comma-separated meta attributes | `--meta-attributes=created_at,updated_at` |
 | `--skip-model` | Boolean | Skip explicit model declaration | `--skip-model` |
 
-#### Relationship Syntax
+### Automatic Features
 
-Relationships support the full `has_many` and `has_one` syntax with automatic resource inference:
+- **Model Inference**: Automatically infers model class from resource name
+- **Resource Inference**: Automatically infers related resource classes for relationships
+- **Meta Detection**: Auto-detects common meta attributes (`created_at`, `updated_at`, etc.)
+- **Clean Output**: Generates well-structured, commented resource files
 
-```bash
-# Relationship types
---relationships=has_many:posts              # has_many :posts
---relationships=has_one:profile             # has_one :profile  
---relationships=has_many:posts,has_one:user # Multiple relationships
+### Best Practices
 
-# JPie automatically infers resource classes:
-# has_many :posts     → PostResource
-# has_one :profile    → ProfileResource
-# has_many :comments  → CommentResource
-```
-
-#### Best Practices
-
-1. **Use automatic inference by default** - Let JPie infer models and resources
-2. **Specify explicit models only when needed** - Override only for non-standard naming
-3. **Group related attributes** - Generate resources with logical attribute groupings
-4. **Leverage meta attribute detection** - Use standard Rails timestamp names for automatic detection
-
-#### Generated File Structure
-
-The generator creates clean, well-structured resource files with:
-
-- **Automatic model inference** (no explicit `model` declaration unless needed)
-- **Grouped sections** (attributes, meta attributes, relationships)
-- **Helpful comments** showing examples when sections are empty
-- **Modern JPie DSL** using the latest syntax and conventions
+1. **Use semantic syntax** for clarity and JSON:API-appropriate thinking
+2. **Be explicit about categorization** when the intent might be unclear
+3. **Let JPie handle inference** for standard naming conventions
+4. **Use `--model` only when necessary** for non-standard model mappings
 
 ## Modern DSL Examples
 
