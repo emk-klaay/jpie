@@ -79,7 +79,7 @@ class UserResource < JPie::Resource
   meta :account_status, :last_login
   # or: meta_attributes :account_status, :last_login
   
-  # Relationships
+  # Includes for related data (used with ?include= parameter)
   has_many :posts
   has_one :profile
   
@@ -119,7 +119,8 @@ class UsersController < ApplicationController
   end
   
   def create
-    user = User.new(deserialize_params)
+    attributes = deserialize_params
+    user = model_class.new(attributes)
     user.created_by = current_user
     user.save!
     
@@ -203,6 +204,42 @@ Content-Type: application/vnd.api+json
 }
 ```
 
+### Includes
+
+JPie supports including related resources using the `?include=` parameter. Related resources are returned in the `included` section of the JSON:API response:
+
+```http
+GET /posts/1?include=author
+HTTP/1.1 200 OK
+Content-Type: application/vnd.api+json
+{
+  "data": {
+    "id": "1",
+    "type": "posts",
+    "attributes": {
+      "title": "My First Post",
+      "content": "This is the content of my first post."
+    }
+  },
+  "included": [
+    {
+      "id": "5",
+      "type": "users",
+      "attributes": {
+        "name": "John Doe",
+        "email": "john@example.com"
+      }
+    }
+  ]
+}
+```
+
+Multiple includes and nested includes are also supported:
+
+```http
+GET /posts?include=author,comments,comments.author
+```
+
 ## Customization and Overrides
 
 Once you have the basic implementation working, you can customize JPie's behavior as needed:
@@ -261,7 +298,7 @@ class UsersController < ApplicationController
   # Override create to add custom logic
   def create
     attributes = deserialize_params
-    user = User.new(attributes)
+    user = model_class.new(attributes)
     user.created_by = current_user
     user.save!
     
@@ -462,7 +499,7 @@ end
 
 ### Polymorphic Associations
 
-JPie supports polymorphic associations seamlessly. Here's a complete example with comments that can belong to multiple types of commentable resources:
+JPie supports polymorphic associations for includes. Here's a complete example with comments that can belong to multiple types of commentable resources:
 
 #### Models with Polymorphic Associations
 
@@ -495,53 +532,60 @@ end
 #### Resources for Polymorphic Associations
 
 ```ruby
-# Comment resource with belongs_to polymorphic relationship
+# Comment resource
 class CommentResource < JPie::Resource
   attributes :content, :created_at
   
-  # Polymorphic belongs_to relationship
-  relationship :commentable do
-    # Dynamically determine the resource class based on the commentable type
-    case object.commentable_type
-    when 'Post'
-      PostResource.new(object.commentable, context)
-    when 'Article'
-      ArticleResource.new(object.commentable, context)
-    else
-      nil
-    end
+  # Define methods for includes
+  has_many :comments  # For including nested comments
+  has_one :author     # For including the comment author
+  
+  private
+  
+  def commentable
+    object.commentable
   end
   
-  relationship :author do
-    UserResource.new(object.author, context) if object.author
+  def author
+    object.author
   end
 end
 
-# Post resource with has_many polymorphic relationship
+# Post resource  
 class PostResource < JPie::Resource
   attributes :title, :content, :published_at
   
-  # Has_many polymorphic relationship
-  relationship :comments do
-    object.comments.map { |comment| CommentResource.new(comment, context) }
+  # Define methods for includes
+  has_many :comments
+  has_one :author
+  
+  private
+  
+  def comments
+    object.comments
   end
   
-  relationship :author do
-    UserResource.new(object.author, context) if object.author
+  def author
+    object.author
   end
 end
 
-# Article resource with has_many polymorphic relationship
+# Article resource
 class ArticleResource < JPie::Resource
   attributes :title, :body, :published_at
   
-  # Has_many polymorphic relationship
-  relationship :comments do
-    object.comments.map { |comment| CommentResource.new(comment, context) }
+  # Define methods for includes
+  has_many :comments
+  has_one :author
+  
+  private
+  
+  def comments
+    object.comments
   end
   
-  relationship :author do
-    UserResource.new(object.author, context) if object.author
+  def author
+    object.author
   end
 end
 ```
@@ -561,7 +605,7 @@ class CommentsController < ApplicationController
     comment.author = current_user
     comment.save!
     
-    render_jsonapi_resource(comment, status: :created)
+    render_jsonapi(comment, status: :created)
   end
   
   private
@@ -618,14 +662,6 @@ end
       "title": "My First Post",
       "content": "This is the content of my first post.",
       "published_at": "2024-01-15T10:30:00Z"
-    },
-    "relationships": {
-      "comments": {
-        "data": [
-          { "id": "1", "type": "comments" },
-          { "id": "2", "type": "comments" }
-        ]
-      }
     }
   },
   "included": [
@@ -635,14 +671,6 @@ end
       "attributes": {
         "content": "Great post!",
         "created_at": "2024-01-15T11:00:00Z"
-      },
-      "relationships": {
-        "commentable": {
-          "data": { "id": "1", "type": "posts" }
-        },
-        "author": {
-          "data": { "id": "5", "type": "users" }
-        }
       }
     },
     {
@@ -651,14 +679,22 @@ end
       "attributes": {
         "content": "Thanks for sharing!",
         "created_at": "2024-01-15T12:00:00Z"
-      },
-      "relationships": {
-        "commentable": {
-          "data": { "id": "1", "type": "posts" }
-        },
-        "author": {
-          "data": { "id": "6", "type": "users" }
-        }
+      }
+    },
+    {
+      "id": "5",
+      "type": "users",
+      "attributes": {
+        "name": "John Doe",
+        "email": "john@example.com"
+      }
+    },
+    {
+      "id": "6",
+      "type": "users",
+      "attributes": {
+        "name": "Jane Smith",
+        "email": "jane@example.com"
       }
     }
   ]
@@ -792,16 +828,6 @@ Each STI resource automatically scopes to its specific type:
 CarResource.scope      # Returns only Car records
 TruckResource.scope    # Returns only Truck records  
 VehicleResource.scope  # Returns all Vehicle records (including STI subclasses)
-```
-
-#### STI in Polymorphic Relationships
-
-JPie's serializer automatically determines the correct resource class for STI models in polymorphic relationships:
-
-```ruby
-# If a polymorphic relationship returns STI objects,
-# JPie will automatically use the correct resource class
-# (CarResource for Car objects, TruckResource for Truck objects, etc.)
 ```
 
 #### Complete STI Example
