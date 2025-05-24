@@ -222,23 +222,23 @@ RSpec.describe JPie::Controller do
       end
 
       it 'handles ActiveRecord::RecordNotFound with 404 status' do
-        controller_with_errors.send(:render_not_found_error, ActiveRecord::RecordNotFound.new('Not found'))
+        controller_with_errors.send(:handle_record_not_found, ActiveRecord::RecordNotFound.new('Not found'))
 
         expect(controller_with_errors.last_render[:status]).to eq(404)
       end
 
       it 'handles ActiveRecord::RecordInvalid with errors key' do
         invalid_error = ActiveRecord::RecordInvalid.new
-        controller_with_errors.send(:render_validation_error, invalid_error)
+        controller_with_errors.send(:handle_record_invalid, invalid_error)
 
         expect(controller_with_errors.last_render[:json]).to have_key(:errors)
       end
 
       it 'handles ActiveRecord::RecordInvalid with unprocessable_entity status' do
         invalid_error = ActiveRecord::RecordInvalid.new
-        controller_with_errors.send(:render_validation_error, invalid_error)
+        controller_with_errors.send(:handle_record_invalid, invalid_error)
 
-        expect(controller_with_errors.last_render[:status]).to eq(:unprocessable_entity)
+        expect(controller_with_errors.last_render[:status]).to eq(:unprocessable_content)
       end
 
       it 'handles JPie::Errors::Error with errors key' do

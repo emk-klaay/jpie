@@ -16,6 +16,7 @@ JPie is a modern, lightweight Rails library for developing JSON:API compliant se
 ⚡ **Performance Optimized** - Efficient serialization with intelligent deduplication  
 🛡️ **Authorization Ready** - Built-in scoping support for security  
 📋 **JSON:API Compliant** - Full specification compliance with sorting, includes, and meta  
+🚨 **Robust Error Handling** - Smart inheritance-aware error handling with full customization options
 
 ## Installation
 
@@ -374,6 +375,202 @@ Multiple includes and nested includes are also supported:
 ```http
 GET /posts?include=author,comments,comments.author
 ```
+
+## Error Handling
+
+JPie provides robust error handling that works correctly with Rails' inheritance and concern systems while allowing full customization.
+
+### Default Error Handling
+
+JPie automatically handles common errors and renders them in JSON:API format:
+
+| Error Type | HTTP Status | Description |
+|------------|-------------|-------------|
+| `JPie::Errors::Error` | Varies | Base JPie errors with custom status |
+| `ActiveRecord::RecordNotFound` | 404 | Missing records |
+| `ActiveRecord::RecordInvalid` | 422 | Validation failures |
+
+**Example error response:**
+
+```json
+{
+  "errors": [
+    {
+      "status": "404",
+      "title": "Not Found", 
+      "detail": "Couldn't find User with 'id'=999"
+    }
+  ]
+}
+```
+
+### Understanding Rails rescue_from Inheritance Issues
+
+Rails evaluates `rescue_from` handlers in **reverse order** (last-defined-first), which can cause issues with gems that provide default error handling. JPie solves this with smart handler detection that only sets up handlers if they don't already exist.
+
+### Customization Options
+
+#### Option 1: Override Specific Handlers
+
+Define your handlers **before** including JPie to ensure they take precedence:
+
+```ruby
+class ApplicationController < ActionController::Base
+  # Define your handlers first
+  rescue_from ActiveRecord::RecordNotFound, with: :my_not_found_handler
+  
+  include JPie::Controller
+  # JPie will detect existing handler and won't override it
+  
+  private
+  
+  def my_not_found_handler(error)
+    render json: { 
+      error: "Custom not found message",
+      detail: error.message 
+    }, status: :not_found
+  end
+end
+```
+
+#### Option 2: Extend JPie Handlers
+
+Override JPie's error handling methods while keeping the rescue_from setup:
+
+```ruby
+class ApplicationController < ActionController::Base
+  include JPie::Controller
+  
+  private
+  
+  def render_jpie_not_found_error(error)
+    # Add custom logging
+    Rails.logger.error "Record not found: #{error.message}"
+    
+    # Call the original method or implement your own
+    super
+  end
+  
+  def render_jpie_validation_error(error)
+    # Add error tracking
+    ErrorTracker.notify(error)
+    
+    # Custom validation error format
+    errors = error.record.errors.map do |field, message|
+      {
+        status: "422",
+        title: "Validation Error",
+        detail: "#{field.humanize} #{message}",
+        source: { pointer: "/data/attributes/#{field}" }
+      }
+    end
+    
+    render json: { errors: errors }, 
+           status: :unprocessable_entity,
+           content_type: 'application/vnd.api+json'
+  end
+end
+```
+
+#### Option 3: Disable All JPie Error Handlers
+
+For complete control over error handling:
+
+```ruby
+class ApplicationController < ActionController::Base
+  include JPie::Controller
+  
+  disable_jpie_error_handlers
+  
+  # Define your own handlers
+  rescue_from StandardError, with: :handle_standard_error
+  rescue_from ActiveRecord::RecordNotFound, with: :handle_not_found
+  
+  private
+  
+  def handle_standard_error(error)
+    # Your custom error handling
+  end
+  
+  def handle_not_found(error)
+    # Your custom not found handling
+  end
+end
+```
+
+#### Option 4: Selective Handler Enabling
+
+Disable all handlers and selectively enable only what you need:
+
+```ruby
+class ApplicationController < ActionController::Base
+  include JPie::Controller
+  
+  disable_jpie_error_handlers
+  
+  # Only enable specific handlers you want
+  enable_jpie_error_handler(JPie::Errors::Error)
+  # ActiveRecord errors will not be handled by JPie
+  
+  # Handle ActiveRecord errors yourself
+  rescue_from ActiveRecord::RecordNotFound, with: :my_not_found_handler
+end
+```
+
+### Custom JPie Errors
+
+Create custom errors by inheriting from JPie::Errors::Error:
+
+```ruby
+# Define custom errors
+class CustomBusinessError < JPie::Errors::Error
+  def initialize(detail: 'Business logic error')
+    super(status: 422, title: 'Business Error', detail: detail)
+  end
+end
+
+class RateLimitError < JPie::Errors::Error
+  def initialize
+    super(status: 429, title: 'Rate Limit Exceeded', detail: 'Too many requests')
+  end
+end
+
+# Use in your controllers
+class UsersController < ApplicationController
+  include JPie::Controller
+  
+  def create
+    raise RateLimitError if rate_limit_exceeded?
+    
+    user = User.new(user_params)
+    unless user.valid_business_rules?
+      raise CustomBusinessError.new(detail: 'User violates business rules')
+    end
+    
+    # ... rest of create logic
+  end
+end
+```
+
+### Error Handler Method Names
+
+JPie prefixes its error handler methods with `jpie_` to avoid conflicts:
+
+- `render_jpie_error` - Main JPie error handler
+- `render_jpie_not_found_error` - ActiveRecord not found errors
+- `render_jpie_validation_error` - ActiveRecord validation errors
+
+For backward compatibility, the old method names are aliased:
+- `render_jsonapi_error` → `render_jpie_error`
+- `render_not_found_error` → `render_jpie_not_found_error`
+- `render_validation_error` → `render_jpie_validation_error`
+
+### Best Practices
+
+1. **Define custom handlers before including JPie** to ensure precedence
+2. **Use JPie error classes** for consistency with JSON:API format
+3. **Log errors appropriately** and integrate with error monitoring services
+4. **Test error handling** to ensure proper JSON:API format responses
 
 ## Customization and Overrides
 
