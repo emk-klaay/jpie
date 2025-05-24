@@ -19,6 +19,7 @@ require 'ostruct'
 # Set up ActiveRecord database
 require_relative 'support/database'
 require_relative 'support/resources'
+require_relative 'support/generator_helper'
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|
