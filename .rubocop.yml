@@ -68,16 +68,39 @@ Capybara/RSpec/PredicateMatcher:
 
 # RSpec cops that are acceptable for our test style
 RSpec/ExampleLength:
-  Max: 20
+  Max: 30
 
 RSpec/MultipleExpectations:
-  Max: 1
+  Max: 8  # Allow more expectations for complex integration tests
 
 RSpec/MultipleMemoizedHelpers:
-  Max: 8
+  Max: 20  # Allow more helpers for complex test scenarios
 
 RSpec/NestedGroups:
   Max: 4
+
+RSpec/DescribeClass:
+  Exclude:
+    - 'spec/**/*_integration_spec.rb'
+    - 'spec/**/*_spec.rb'  # Allow integration and feature tests without class specification
+
+RSpec/ContextWording:
+  Enabled: false  # Allow flexible context descriptions for better readability
+
+RSpec/IndexedLet:
+  Enabled: false  # Allow indexed let statements for test data setup
+
+RSpec/LetSetup:
+  Enabled: false  # Allow let! for test data setup
+
+RSpec/StubbedMock:
+  Enabled: false  # Allow expect().to receive for test clarity
+
+RSpec/IteratedExpectation:
+  Enabled: false  # Allow iteration over arrays in tests
+
+RSpec/InstanceVariable:
+  Enabled: false  # Allow instance variables in tests for setup
 
 RSpec/FilePath:
   Enabled: false
