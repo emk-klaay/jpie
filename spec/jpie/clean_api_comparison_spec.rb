@@ -132,7 +132,7 @@ RSpec.describe 'Clean API Design - Hiding Join Tables' do
 
     it 'supports both direct and semantic relationship names' do
       tag_serializer = JPie::Serializer.new(TagResource)
-      
+
       # Both should work identically
       direct_result = tag_serializer.serialize(tag_ruby, {}, includes: ['posts'])
       semantic_result = tag_serializer.serialize(tag_ruby, {}, includes: ['tagged_posts'])

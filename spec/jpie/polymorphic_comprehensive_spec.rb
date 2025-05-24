@@ -70,7 +70,7 @@ RSpec.describe 'Comprehensive Polymorphic Includes - Clean API' do
 
         tag_names = tag_items.map { |tag| tag[:attributes]['name'] }
         expect(tag_names).to contain_exactly('ruby', 'testing', 'api')
-        
+
         # Should not expose taggings
         tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
         expect(tagging_items).to be_empty
@@ -122,7 +122,7 @@ RSpec.describe 'Comprehensive Polymorphic Includes - Clean API' do
         expect(post_items.count).to eq(1) # post1
         expect(comment_items.count).to eq(1) # comment1
         expect(user_items.count).to eq(2) # user1 (post author) and user2 (comment author)
-        
+
         # Should not expose taggings
         tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
         expect(tagging_items).to be_empty
@@ -175,7 +175,7 @@ RSpec.describe 'Comprehensive Polymorphic Includes - Clean API' do
         expect(tag_items.first[:attributes]['name']).to eq('ruby')
         expect(post_items.first[:attributes]['title']).to eq('Ruby Tutorial')
         expect(user_items.first[:attributes]['name']).to eq('Alice')
-        
+
         # Should not expose taggings
         tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
         expect(tagging_items).to be_empty
@@ -186,7 +186,7 @@ RSpec.describe 'Comprehensive Polymorphic Includes - Clean API' do
   describe 'JSON:API compliance with polymorphic data - Clean API' do
     it 'produces valid JSON:API structure with clean polymorphic includes' do
       serializer = JPie::Serializer.new(TagResource)
-      result = serializer.serialize(tag_ruby, {}, includes: ['posts', 'comments'])
+      result = serializer.serialize(tag_ruby, {}, includes: %w[posts comments])
 
       # Should have proper JSON:API structure
       expect(result).to have_key(:data)
@@ -206,7 +206,7 @@ RSpec.describe 'Comprehensive Polymorphic Includes - Clean API' do
         expect(item).to have_key(:type)
         expect(item).to have_key(:attributes)
       end
-      
+
       # Should not expose taggings
       tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
       expect(tagging_items).to be_empty

@@ -16,8 +16,8 @@ class PostResource < JPie::Resource
   attributes :title, :content
   meta_attributes :created_at, :updated_at
   has_one :user
-  has_many :comments, resource: 'CommentResource'
-  has_many :tags, resource: 'TagResource'
+  has_many :comments
+  has_many :tags
   # NOTE: No has_many :taggings - join table is hidden
 end
 
@@ -28,11 +28,11 @@ class CommentResource < JPie::Resource
   attributes :content
   meta_attributes :created_at, :updated_at
   has_one :user
-  has_one :post, resource: 'PostResource'
+  has_one :post
   has_one :parent_comment, resource: 'CommentResource'
   has_many :likes
   has_many :replies, resource: 'CommentResource'
-  has_many :tags, resource: 'TagResource'
+  has_many :tags
   # NOTE: No has_many :taggings - join table is hidden
 end
 
@@ -54,8 +54,8 @@ class TagResource < JPie::Resource
   has_many :tagged_comments, attr: :comments, resource: 'CommentResource'
 
   # Alternative: if you want to use the same names as ActiveRecord
-  has_many :posts, resource: 'PostResource'
-  has_many :comments, resource: 'CommentResource'
+  has_many :posts
+  has_many :comments
 
   # NOTE: No has_many :taggings - join table is hidden
 end

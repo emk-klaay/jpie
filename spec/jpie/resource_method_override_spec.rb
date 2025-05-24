@@ -119,7 +119,7 @@ RSpec.describe 'Resource Method Override Support' do
         # Private methods should work when accessed through attributes_hash
         attributes = resource.attributes_hash
         expect(attributes[:formatted_info]).to eq('JOHN DOE - [john@example.com]')
-        
+
         # But should not be callable directly (this is expected Ruby behavior)
         expect { resource.formatted_info }.to raise_error(NoMethodError, /private method/)
       end
@@ -372,4 +372,4 @@ RSpec.describe 'Resource Method Override Support' do
       end
     end
   end
-end 
+end

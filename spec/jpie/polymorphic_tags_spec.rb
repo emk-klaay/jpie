@@ -68,7 +68,7 @@ RSpec.describe 'Polymorphic Tags - Clean API' do
       # Should not expose taggings in clean API
       tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
       expect(tagging_items).to be_empty
-      
+
       # But should have the tags
       tag_items = result[:included].select { |item| item[:type] == 'tags' }
       expect(tag_items.count).to eq(2)
@@ -87,7 +87,7 @@ RSpec.describe 'Polymorphic Tags - Clean API' do
 
       expect(tag_items.count).to eq(3) # ruby, rails from post + testing from comment
       expect(comment_items.count).to eq(1)
-      
+
       # Should not expose taggings
       tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
       expect(tagging_items).to be_empty
@@ -125,7 +125,7 @@ RSpec.describe 'Polymorphic Tags - Clean API' do
     end
 
     it 'includes tagged posts and comments directly' do
-      result = serializer.serialize(tag_ruby, {}, includes: ['posts', 'comments'])
+      result = serializer.serialize(tag_ruby, {}, includes: %w[posts comments])
 
       expect(result[:included]).to be_present
       post_items = result[:included].select { |item| item[:type] == 'posts' }
@@ -133,14 +133,14 @@ RSpec.describe 'Polymorphic Tags - Clean API' do
 
       expect(post_items.count).to eq(1)
       expect(comment_items.count).to eq(1)
-      
+
       # Should not expose taggings
       tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
       expect(tagging_items).to be_empty
     end
 
     it 'supports semantic relationship names' do
-      result = serializer.serialize(tag_ruby, {}, includes: ['tagged_posts', 'tagged_comments'])
+      result = serializer.serialize(tag_ruby, {}, includes: %w[tagged_posts tagged_comments])
 
       expect(result[:included]).to be_present
       post_items = result[:included].select { |item| item[:type] == 'posts' }
@@ -148,7 +148,7 @@ RSpec.describe 'Polymorphic Tags - Clean API' do
 
       expect(post_items.count).to eq(1)
       expect(comment_items.count).to eq(1)
-      
+
       # Should not expose taggings
       tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
       expect(tagging_items).to be_empty
@@ -166,7 +166,7 @@ RSpec.describe 'Polymorphic Tags - Clean API' do
       # Should include the polymorphic objects and their users, but not taggings
       types_included = result[:included].map { |item| item[:type] }.uniq.sort
       expect(types_included).to contain_exactly('comments', 'users')
-      
+
       # Should not expose taggings
       tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
       expect(tagging_items).to be_empty
