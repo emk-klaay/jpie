@@ -52,4 +52,7 @@ node_modules
 vendor/bundle
 
 # Brakeman output
-/brakeman.html spec/tmp/
+/brakeman.html
+
+# Generator temporary files
+spec/tmp/
