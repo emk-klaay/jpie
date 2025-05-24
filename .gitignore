@@ -52,4 +52,4 @@ node_modules
 vendor/bundle
 
 # Brakeman output
-/brakeman.html 
+/brakeman.html spec/tmp/
