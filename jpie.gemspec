@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary = 'A resource-focused Rails library for developing JSON:API compliant servers'
   spec.description = 'JPie provides a framework for developing JSON:API compliant servers with Rails 8+. ' \
                      'It focuses on clean architecture with strong separation of concerns.'
-  spec.homepage = 'https://github.com/emilkampp/jpie'
+  spec.homepage = 'https://github.com/emk-klaay/jpie'
   spec.license = 'MIT'
   spec.required_ruby_version = '>= 3.4.0'
 
