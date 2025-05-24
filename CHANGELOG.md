@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-01-24
+
+### Added
+- **Modern DSL Aliases**: Introduced concise aliases following Rails conventions
+  - `render_jsonapi` - Single method for rendering both resources and collections
+  - `resource` - Concise alias for `jsonapi_resource` in controllers
+  - `meta` and `metas` - Short aliases for `meta_attribute` and `meta_attributes`
+  - `sortable` - Concise alias for `sortable_by` in resources
+- **Method Override Support**: Custom attribute methods can now be defined directly on resource classes
+  - Support for both public and private method definitions
+  - Access to `object` and `context` within custom methods
+  - Method precedence: blocks → options blocks → custom methods → model attributes
+- **Enhanced Documentation**: Comprehensive README updates with Key Features section and modern DSL examples
+
+### Enhanced
+- **Controller DSL**: Simplified rendering with intelligent `render_jsonapi` method that handles both single resources and collections automatically
+- **Resource DSL**: More intuitive and concise method names aligned with modern Rails patterns
+- **Backward Compatibility**: All original method names preserved via aliases - no breaking changes
+- **Code Quality**: 100% test coverage maintained with 363 passing tests and full RuboCop compliance
+
+### Improved
+- **Developer Experience**: Cleaner, more intuitive API that follows Rails conventions
+- **IDE Support**: Better support for custom attribute methods with proper method definitions
+- **Testing**: Easier testing of individual custom methods vs block-based approaches
+- **Performance**: Method-based attributes avoid block overhead for simple transformations
+
+### Technical Details
+- Custom methods support both public and private visibility
+- Intelligent method detection prevents overriding existing custom implementations
+- All render methods consolidated into single polymorphic `render_jsonapi` method
+- Full backward compatibility ensures seamless upgrades
+
 ## [0.2.0] - 2025-01-24
 
 ### Added
