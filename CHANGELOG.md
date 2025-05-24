@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2025-01-24
+
+### Fixed
+- **Gemspec Metadata**: Updated homepage URL to correct GitHub repository (https://github.com/emk-klaay/jpie)
+- **Documentation Links**: Fixed source code and changelog URLs in gem metadata
+
 ## [0.3.0] - 2025-01-24
 
 ### Added
