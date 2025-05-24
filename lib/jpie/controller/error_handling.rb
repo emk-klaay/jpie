@@ -56,6 +56,32 @@ module JPie
 
           rescue_from ActiveRecord::RecordInvalid,
                       with: :handle_record_invalid
+
+          # JSON:API compliance error handlers
+          unless rescue_handler?(JPie::Errors::InvalidJsonApiRequestError)
+            rescue_from JPie::Errors::InvalidJsonApiRequestError,
+                        with: :handle_invalid_json_api_request
+          end
+
+          unless rescue_handler?(JPie::Errors::UnsupportedIncludeError)
+            rescue_from JPie::Errors::UnsupportedIncludeError,
+                        with: :handle_unsupported_include
+          end
+
+          unless rescue_handler?(JPie::Errors::UnsupportedSortFieldError)
+            rescue_from JPie::Errors::UnsupportedSortFieldError,
+                        with: :handle_unsupported_sort_field
+          end
+
+          unless rescue_handler?(JPie::Errors::InvalidSortParameterError)
+            rescue_from JPie::Errors::InvalidSortParameterError,
+                        with: :handle_invalid_sort_parameter
+          end
+
+          return if rescue_handler?(JPie::Errors::InvalidIncludeParameterError)
+
+          rescue_from JPie::Errors::InvalidIncludeParameterError,
+                      with: :handle_invalid_include_parameter
         end
 
         def remove_jpie_handlers
@@ -106,6 +132,47 @@ module JPie
             detail: detail
           }]
         }, status: status
+      end
+
+      # Handle JSON:API compliance errors
+      def handle_invalid_json_api_request(error)
+        render_json_api_error(
+          status: error.status,
+          title: error.title || 'Invalid JSON:API Request',
+          detail: error.detail
+        )
+      end
+
+      def handle_unsupported_include(error)
+        render_json_api_error(
+          status: error.status,
+          title: error.title || 'Unsupported Include',
+          detail: error.detail
+        )
+      end
+
+      def handle_unsupported_sort_field(error)
+        render_json_api_error(
+          status: error.status,
+          title: error.title || 'Unsupported Sort Field',
+          detail: error.detail
+        )
+      end
+
+      def handle_invalid_sort_parameter(error)
+        render_json_api_error(
+          status: error.status,
+          title: error.title || 'Invalid Sort Parameter',
+          detail: error.detail
+        )
+      end
+
+      def handle_invalid_include_parameter(error)
+        render_json_api_error(
+          status: error.status,
+          title: error.title || 'Invalid Include Parameter',
+          detail: error.detail
+        )
       end
 
       # Backward compatibility aliases

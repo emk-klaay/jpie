@@ -66,5 +66,46 @@ module JPie
         super(status: 500, title: 'Resource Error', detail:)
       end
     end
+
+    # JSON:API Compliance Errors
+    class InvalidJsonApiRequestError < BadRequestError
+      def initialize(detail: 'Request is not JSON:API compliant')
+        super
+      end
+    end
+
+    class UnsupportedIncludeError < BadRequestError
+      def initialize(include_path:, supported_includes: [])
+        detail = if supported_includes.any?
+                   "Unsupported include '#{include_path}'. Supported includes: #{supported_includes.join(', ')}"
+                 else
+                   "Unsupported include '#{include_path}'. No includes are supported for this resource"
+                 end
+        super(detail: detail)
+      end
+    end
+
+    class UnsupportedSortFieldError < BadRequestError
+      def initialize(sort_field:, supported_fields: [])
+        detail = if supported_fields.any?
+                   "Unsupported sort field '#{sort_field}'. Supported fields: #{supported_fields.join(', ')}"
+                 else
+                   "Unsupported sort field '#{sort_field}'. No sorting is supported for this resource"
+                 end
+        super(detail: detail)
+      end
+    end
+
+    class InvalidSortParameterError < BadRequestError
+      def initialize(detail: 'Invalid sort parameter format')
+        super
+      end
+    end
+
+    class InvalidIncludeParameterError < BadRequestError
+      def initialize(detail: 'Invalid include parameter format')
+        super
+      end
+    end
   end
 end

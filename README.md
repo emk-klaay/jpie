@@ -572,6 +572,188 @@ For backward compatibility, the old method names are aliased:
 3. **Log errors appropriately** and integrate with error monitoring services
 4. **Test error handling** to ensure proper JSON:API format responses
 
+## JSON:API Compliance Validation
+
+JPie automatically validates JSON:API compliance for requests, includes, and sort parameters, providing clear error messages when validation fails.
+
+### Automatic Validation
+
+JPie performs validation automatically in CRUD actions:
+
+- **Request structure validation** for POST/PATCH/PUT operations
+- **Include parameter validation** for all read operations  
+- **Sort parameter validation** for index operations
+
+### Request Structure Validation
+
+JPie validates that JSON:API requests follow the specification:
+
+```ruby
+# Valid JSON:API request
+{
+  "data": {
+    "type": "users",
+    "attributes": {
+      "name": "John Doe",
+      "email": "john@example.com"
+    }
+  }
+}
+
+# Invalid - missing required fields will raise InvalidJsonApiRequestError
+{
+  "name": "John Doe"  # Missing "data" wrapper and "type"
+}
+```
+
+**Validation includes:**
+- Content-Type header must be `application/vnd.api+json` for write operations
+- Request must have top-level `data` member
+- Resource objects must have `type` member
+- Resource objects must have `id` member for updates
+- Valid JSON structure
+
+### Include Parameter Validation
+
+JPie validates that include parameters match supported relationships:
+
+```ruby
+class UserResource < JPie::Resource
+  has_many :posts
+  has_one :profile
+  
+  # Override to customize supported includes
+  def self.supported_includes
+    ['posts', 'profile', 'posts.comments']  # Supports nested includes
+  end
+end
+
+# Valid requests
+GET /users?include=posts
+GET /users?include=posts,profile  
+GET /users?include=posts.comments
+
+# Invalid - raises UnsupportedIncludeError  
+GET /users?include=invalid_relationship
+```
+
+**Default behavior:** All defined relationships (`has_many`, `has_one`) are supported by default.
+
+### Sort Parameter Validation
+
+JPie validates that sort fields are supported by the resource:
+
+```ruby
+class UserResource < JPie::Resource
+  attributes :name, :email
+  sortable :popularity
+  
+  # Override to customize supported sort fields
+  def self.supported_sort_fields
+    ['name', 'email', 'popularity', 'created_at']
+  end
+end
+
+# Valid requests
+GET /users?sort=name
+GET /users?sort=-email,name  # Descending email, ascending name
+GET /users?sort=popularity
+
+# Invalid - raises UnsupportedSortFieldError
+GET /users?sort=invalid_field
+```
+
+**Default behavior:** All attributes, sortable fields, and timestamp columns are supported by default.
+
+### Error Responses
+
+Validation errors return proper JSON:API error responses:
+
+```json
+{
+  "errors": [
+    {
+      "status": "400",
+      "title": "Unsupported Include",
+      "detail": "Unsupported include 'comments'. Supported includes: posts, profile"
+    }
+  ]
+}
+```
+
+### Customizing Validation
+
+#### Custom Supported Includes
+
+```ruby
+class PostResource < JPie::Resource
+  has_many :comments
+  has_one :author
+  
+  # Customize supported includes with nested relationships
+  def self.supported_includes
+    {
+      'author' => {},
+      'comments' => {
+        'author' => {}  # Support comments.author
+      }
+    }
+  end
+end
+```
+
+#### Custom Supported Sort Fields
+
+```ruby
+class PostResource < JPie::Resource
+  attributes :title, :content
+  
+  # Restrict sorting to specific fields only
+  def self.supported_sort_fields
+    ['title', 'created_at']  # Only allow sorting by title and created_at
+  end
+end
+```
+
+#### Disabling Validation
+
+For special cases where you need to disable validation:
+
+```ruby
+class CustomController < ApplicationController
+  include JPie::Controller
+  
+  # Override automatic methods to skip validation
+  def index
+    # Skip validation calls
+    resources = resource_class.scope(context)
+    render_jsonapi(resources)
+  end
+  
+  private
+  
+  # Or override validation methods to customize behavior
+  def validate_include_params
+    # Custom include validation logic
+    # or call super for default behavior
+  end
+end
+```
+
+### Validation Error Types
+
+JPie provides specific error classes for different validation scenarios:
+
+| Error Class | HTTP Status | Description |
+|-------------|-------------|-------------|
+| `InvalidJsonApiRequestError` | 400 | Invalid request structure or format |
+| `UnsupportedIncludeError` | 400 | Include parameter not supported |
+| `UnsupportedSortFieldError` | 400 | Sort field not supported |
+| `InvalidSortParameterError` | 400 | Invalid sort field format |
+| `InvalidIncludeParameterError` | 400 | Invalid include parameter format |
+
+All validation errors can be customized using the same error handling patterns described in the Error Handling section.
+
 ## Customization and Overrides
 
 Once you have the basic implementation working, you can customize JPie's behavior as needed:

@@ -34,6 +34,8 @@ module JPie
 
         def define_index_method(resource_class)
           define_method :index do
+            validate_include_params
+            validate_sort_params
             resources = resource_class.scope(context)
             sort_fields = parse_sort_params
             resources = resource_class.sort(resources, sort_fields) if sort_fields.any?
@@ -43,6 +45,7 @@ module JPie
 
         def define_show_method(resource_class)
           define_method :show do
+            validate_include_params
             resource = resource_class.scope(context).find(params[:id])
             render_jsonapi(resource)
           end
@@ -50,6 +53,7 @@ module JPie
 
         def define_create_method(resource_class)
           define_method :create do
+            validate_json_api_request
             attributes = deserialize_params
             resource = resource_class.model.create!(attributes)
             render_jsonapi(resource, status: :created)
@@ -58,6 +62,7 @@ module JPie
 
         def define_update_method(resource_class)
           define_method :update do
+            validate_json_api_request
             resource = resource_class.scope(context).find(params[:id])
             attributes = deserialize_params
             resource.update!(attributes)
@@ -76,6 +81,8 @@ module JPie
 
       # These methods can still be called manually or used to override defaults
       def index
+        validate_include_params
+        validate_sort_params
         resources = resource_class.scope(context)
         sort_fields = parse_sort_params
         resources = resource_class.sort(resources, sort_fields) if sort_fields.any?
@@ -83,17 +90,20 @@ module JPie
       end
 
       def show
+        validate_include_params
         resource = resource_class.scope(context).find(params[:id])
         render_jsonapi(resource)
       end
 
       def create
+        validate_json_api_request
         attributes = deserialize_params
         resource = model_class.create!(attributes)
         render_jsonapi(resource, status: :created)
       end
 
       def update
+        validate_json_api_request
         resource = resource_class.scope(context).find(params[:id])
         attributes = deserialize_params
         resource.update!(attributes)

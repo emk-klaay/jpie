@@ -37,6 +37,32 @@ module JPie
       def scope(_context = {})
         model.all
       end
+
+      # Return supported include paths for validation
+      # Override this method to customize supported includes
+      def supported_includes
+        # Return relationship names as supported includes by default
+        _relationships.keys.map(&:to_s)
+
+        # Convert to nested hash format for complex includes
+        # For simple includes, return array format
+      end
+
+      # Return supported sort fields for validation
+      # Override this method to customize supported sort fields
+      def supported_sort_fields
+        # Return all attributes and sortable fields as supported sort fields by default
+        fields = (_attributes.keys + _sortable_fields.keys).uniq.map(&:to_s)
+
+        # Add common model timestamp fields if the model supports them
+        if model.respond_to?(:column_names)
+          fields << 'created_at' if model.column_names.include?('created_at') && fields.exclude?('created_at')
+
+          fields << 'updated_at' if model.column_names.include?('updated_at') && fields.exclude?('updated_at')
+        end
+
+        fields
+      end
     end
 
     attr_reader :object, :context
