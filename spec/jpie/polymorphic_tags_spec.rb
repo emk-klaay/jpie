@@ -2,7 +2,7 @@
 
 require 'spec_helper'
 
-RSpec.describe 'Polymorphic Tags' do
+RSpec.describe 'Polymorphic Tags - Clean API' do
   let!(:user) { User.create!(name: 'Test User', email: 'test@example.com') }
   let!(:post) { Post.create!(title: 'Test Post', content: 'Content', user: user) }
   let!(:comment) { Comment.create!(content: 'Test comment', user: user, post: post) }
@@ -41,7 +41,7 @@ RSpec.describe 'Polymorphic Tags' do
     end
   end
 
-  describe 'Serialization with polymorphic includes' do
+  describe 'Serialization with polymorphic includes - Clean API' do
     let(:serializer) { JPie::Serializer.new(PostResource) }
 
     before do
@@ -62,27 +62,39 @@ RSpec.describe 'Polymorphic Tags' do
       expect(tag_names).to contain_exactly('ruby', 'rails')
     end
 
-    it 'includes taggings when requested' do
-      result = serializer.serialize(post, {}, includes: ['taggings'])
+    it 'hides join table in clean API' do
+      result = serializer.serialize(post, {}, includes: ['tags'])
 
-      expect(result[:included]).to be_present
+      # Should not expose taggings in clean API
       tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
-      expect(tagging_items.count).to eq(2)
+      expect(tagging_items).to be_empty
+      
+      # But should have the tags
+      tag_items = result[:included].select { |item| item[:type] == 'tags' }
+      expect(tag_items.count).to eq(2)
     end
 
-    it 'supports nested includes like tags.taggings' do
-      result = serializer.serialize(post, {}, includes: ['tags.taggings'])
+    it 'supports complex includes through tags' do
+      # Create another post with shared tags
+      post2 = Post.create!(title: 'Another Post', content: 'More content', user: user)
+      Tagging.create!(tag: tag_ruby, taggable: post2)
+
+      result = serializer.serialize(post, {}, includes: ['tags', 'comments.tags'])
 
       expect(result[:included]).to be_present
       tag_items = result[:included].select { |item| item[:type] == 'tags' }
-      tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+      comment_items = result[:included].select { |item| item[:type] == 'comments' }
 
-      expect(tag_items.count).to eq(2)
-      expect(tagging_items.count).to be >= 2 # May include taggings from other posts too
+      expect(tag_items.count).to eq(3) # ruby, rails from post + testing from comment
+      expect(comment_items.count).to eq(1)
+      
+      # Should not expose taggings
+      tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+      expect(tagging_items).to be_empty
     end
   end
 
-  describe 'Comment serialization with polymorphic tags' do
+  describe 'Comment serialization with polymorphic tags - Clean API' do
     let(:serializer) { JPie::Serializer.new(CommentResource) }
 
     before do
@@ -102,7 +114,7 @@ RSpec.describe 'Polymorphic Tags' do
     end
   end
 
-  describe 'Advanced polymorphic includes' do
+  describe 'Tag serialization with back-references - Clean API' do
     let(:serializer) { JPie::Serializer.new(TagResource) }
 
     before do
@@ -112,41 +124,52 @@ RSpec.describe 'Polymorphic Tags' do
       Tagging.create!(tag: tag_rails, taggable: post)
     end
 
-    it 'includes taggings from tag perspective' do
-      result = serializer.serialize(tag_ruby, {}, includes: ['taggings'])
+    it 'includes tagged posts and comments directly' do
+      result = serializer.serialize(tag_ruby, {}, includes: ['posts', 'comments'])
 
       expect(result[:included]).to be_present
-      tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
-      expect(tagging_items.count).to eq(2) # One for post, one for comment
-    end
-
-    it 'supports taggings.taggable includes showing polymorphic resources' do
-      result = serializer.serialize(tag_ruby, {}, includes: ['taggings.taggable'])
-
-      expect(result[:included]).to be_present
-
-      # Should include taggings and the polymorphic taggable objects
-      tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
       post_items = result[:included].select { |item| item[:type] == 'posts' }
       comment_items = result[:included].select { |item| item[:type] == 'comments' }
 
-      expect(tagging_items.count).to eq(2)
       expect(post_items.count).to eq(1)
       expect(comment_items.count).to eq(1)
+      
+      # Should not expose taggings
+      tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+      expect(tagging_items).to be_empty
     end
 
-    it 'supports complex nested polymorphic includes' do
+    it 'supports semantic relationship names' do
+      result = serializer.serialize(tag_ruby, {}, includes: ['tagged_posts', 'tagged_comments'])
+
+      expect(result[:included]).to be_present
+      post_items = result[:included].select { |item| item[:type] == 'posts' }
+      comment_items = result[:included].select { |item| item[:type] == 'comments' }
+
+      expect(post_items.count).to eq(1)
+      expect(comment_items.count).to eq(1)
+      
+      # Should not expose taggings
+      tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+      expect(tagging_items).to be_empty
+    end
+
+    it 'supports deep includes through polymorphic relationships cleanly' do
       # Create a comment on the post and tag it
       reply = Comment.create!(content: 'Reply', user: user, post: post, parent_comment: comment)
       Tagging.create!(tag: tag_testing, taggable: reply)
 
-      result = serializer.serialize(tag_testing, {}, includes: ['taggings.taggable.user'])
+      result = serializer.serialize(tag_testing, {}, includes: ['tagged_comments.user'])
 
       expect(result[:included]).to be_present
 
-      # Should include taggings, the polymorphic objects, and their users
+      # Should include the polymorphic objects and their users, but not taggings
       types_included = result[:included].map { |item| item[:type] }.uniq.sort
-      expect(types_included).to include('taggings', 'users')
+      expect(types_included).to contain_exactly('comments', 'users')
+      
+      # Should not expose taggings
+      tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+      expect(tagging_items).to be_empty
     end
   end
 end

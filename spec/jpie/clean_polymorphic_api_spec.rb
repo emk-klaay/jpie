@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'spec_helper'
-require_relative '../support/clean_resources'
 
 RSpec.describe 'Clean Polymorphic API without Exposing Join Tables' do
   # Test data setup
@@ -30,7 +29,7 @@ RSpec.describe 'Clean Polymorphic API without Exposing Join Tables' do
 
   describe 'Clean API for polymorphic includes' do
     context 'Post serialization' do
-      let(:serializer) { JPie::Serializer.new(CleanPostResource) }
+      let(:serializer) { JPie::Serializer.new(PostResource) }
 
       it 'includes tags directly without exposing join table' do
         result = serializer.serialize(ruby_post, {}, includes: ['tags'])
@@ -65,7 +64,7 @@ RSpec.describe 'Clean Polymorphic API without Exposing Join Tables' do
     end
 
     context 'Tag serialization with polymorphic back-references' do
-      let(:serializer) { JPie::Serializer.new(CleanTagResource) }
+      let(:serializer) { JPie::Serializer.new(TagResource) }
 
       it 'includes all posts and comments that have this tag' do
         result = serializer.serialize(tag_ruby, {}, includes: %w[tagged_posts tagged_comments])
@@ -104,7 +103,7 @@ RSpec.describe 'Clean Polymorphic API without Exposing Join Tables' do
 
     context 'Complex scenarios without join table exposure' do
       it 'handles multiple polymorphic includes across different resource types' do
-        post_serializer = JPie::Serializer.new(CleanPostResource)
+        post_serializer = JPie::Serializer.new(PostResource)
         result = post_serializer.serialize([ruby_post, rails_post], {}, includes: ['tags', 'comments.tags', 'user'])
 
         expect(result[:included]).to be_present

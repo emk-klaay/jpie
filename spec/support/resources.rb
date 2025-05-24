@@ -10,24 +10,30 @@ class UserResource < JPie::Resource
 end
 
 class PostResource < JPie::Resource
+  model Post
+  type 'posts'
+
   attributes :title, :content
   meta_attributes :created_at, :updated_at
   has_one :user
-  has_many :comments
-  has_many :tags
-  has_many :taggings
+  has_many :comments, resource: 'CommentResource'
+  has_many :tags, resource: 'TagResource'
+  # NOTE: No has_many :taggings - join table is hidden
 end
 
 class CommentResource < JPie::Resource
+  model Comment
+  type 'comments'
+
   attributes :content
   meta_attributes :created_at, :updated_at
   has_one :user
-  has_one :post
-  has_one :parent_comment
+  has_one :post, resource: 'PostResource'
+  has_one :parent_comment, resource: 'CommentResource'
   has_many :likes
   has_many :replies, resource: 'CommentResource'
-  has_many :tags
-  has_many :taggings
+  has_many :tags, resource: 'TagResource'
+  # NOTE: No has_many :taggings - join table is hidden
 end
 
 class LikeResource < JPie::Resource
@@ -37,11 +43,21 @@ class LikeResource < JPie::Resource
 end
 
 class TagResource < JPie::Resource
+  model Tag
+  type 'tags'
+
   attributes :name
   meta_attributes :created_at, :updated_at
-  has_many :posts
-  has_many :comments
-  has_many :taggings
+
+  # Provide semantic names instead of exposing the join table
+  has_many :tagged_posts, attr: :posts, resource: 'PostResource'
+  has_many :tagged_comments, attr: :comments, resource: 'CommentResource'
+
+  # Alternative: if you want to use the same names as ActiveRecord
+  has_many :posts, resource: 'PostResource'
+  has_many :comments, resource: 'CommentResource'
+
+  # NOTE: No has_many :taggings - join table is hidden
 end
 
 class TaggingResource < JPie::Resource
