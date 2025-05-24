@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-01-25
+
+### Added
+- **Semantic Generator Syntax**: Complete rewrite of resource generator with JSON:API-focused field categorization
+  - `attribute:field` - Explicit JSON:API attribute definition
+  - `meta:field` - Explicit JSON:API meta attribute definition  
+  - `has_many:resource` - Shorthand relationship syntax
+  - `relationship:type:field` - Explicit relationship syntax
+- **Improved Developer Experience**: More intuitive and semantic generator approach focused on JSON:API concepts rather than database types
+
+### Enhanced
+- **Generator Logic**: Refactored generator into cleaner, more maintainable methods with proper separation of concerns
+- **Backward Compatibility**: Legacy `field:type` syntax fully preserved - existing usage continues to work unchanged
+- **Code Quality**: Fixed all RuboCop violations in generator code with improved method structure
+- **Test Coverage**: Comprehensive test suite covering semantic syntax, legacy compatibility, and all feature combinations
+
+### Improved
+- **Generator Syntax**: Replaced meaningless database types (`name:string`) with semantic JSON:API categorization (`attribute:name`)
+- **Documentation**: README completely updated to showcase new semantic approach with comprehensive examples
+- **Generator Help**: Updated help text and banners to reflect new semantic syntax
+
+### Technical Details
+- Generator automatically categorizes fields based on semantic prefixes
+- Auto-detection of common meta attributes (`created_at`, `updated_at`, etc.) preserved
+- Relationship inference and resource class detection maintained
+- All 373 tests pass with 95.97% coverage maintained
+
+### Migration Guide
+- **New syntax (recommended)**: `rails generate jpie:resource User attribute:name meta:created_at has_many:posts`
+- **Legacy syntax (still works)**: `rails generate jpie:resource User name:string created_at:datetime --relationships=has_many:posts`
+- No breaking changes - existing generators continue to work as before
+
 ## [0.3.1] - 2025-01-24
 
 ### Fixed
