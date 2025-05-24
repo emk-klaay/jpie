@@ -17,7 +17,7 @@ Gem::Specification.new do |spec|
 
   spec.metadata['allowed_push_host'] = 'https://rubygems.org'
   spec.metadata['homepage_uri'] = spec.homepage
-  spec.metadata['source_code_uri'] = spec.homepage
+  spec.metadata['source_code_uri'] = "#{spec.homepage}.git"
   spec.metadata['changelog_uri'] = "#{spec.homepage}/blob/main/CHANGELOG.md"
 
   # Specify which files should be added to the gem when it is released.
@@ -32,8 +32,8 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   # Runtime dependencies
-  spec.add_dependency 'activesupport', '>= 8.0.0'
-  spec.add_dependency 'rails', '>= 8.0.0'
+  spec.add_dependency 'activesupport', '~> 8.0', '>= 8.0.0'
+  spec.add_dependency 'rails', '~> 8.0', '>= 8.0.0'
 
   # Development dependencies
   spec.add_development_dependency 'brakeman', '~> 6.0'
