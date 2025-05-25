@@ -10,9 +10,6 @@ class UserResource < JPie::Resource
 end
 
 class PostResource < JPie::Resource
-  model Post
-  type 'posts'
-
   attributes :title, :content
   meta_attributes :created_at, :updated_at
   has_one :user
@@ -21,9 +18,6 @@ class PostResource < JPie::Resource
 end
 
 class CommentResource < JPie::Resource
-  model Comment
-  type 'comments'
-
   attributes :content
   meta_attributes :created_at, :updated_at
   has_one :user
@@ -41,9 +35,6 @@ class LikeResource < JPie::Resource
 end
 
 class TagResource < JPie::Resource
-  model Tag
-  type 'tags'
-
   attributes :name
   meta_attributes :created_at, :updated_at
   has_many :posts
