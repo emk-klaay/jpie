@@ -45,8 +45,14 @@ module JPie
           return if method_defined?(name) || private_method_defined?(name)
 
           define_method(name) do
-            attr_name = options[:attr] || name
-            @object.public_send(attr_name)
+            # Handle through associations
+            if options[:through]
+              handle_through_association(name, options)
+            else
+              # Standard association handling
+              attr_name = options[:attr] || name
+              @object.public_send(attr_name)
+            end
           end
         end
 
@@ -91,6 +97,19 @@ module JPie
           # :user -> "UserResource"
           singularized_name = relationship_name.to_s.singularize
           "#{singularized_name.camelize}Resource"
+        end
+      end
+
+      private
+
+      # Handle through associations by calling the appropriate association method
+      def handle_through_association(name, options)
+        if options[:attr]
+          # Custom attribute name was provided - use it
+          @object.public_send(options[:attr])
+        else
+          # Use the relationship name directly - Rails will handle the through association
+          @object.public_send(name)
         end
       end
     end

@@ -52,7 +52,7 @@ module JPie
       # Override this method to customize supported sort fields
       def supported_sort_fields
         # Return all attributes and sortable fields as supported sort fields by default
-        fields = (_attributes.keys + _sortable_fields.keys).uniq.map(&:to_s)
+        fields = (_attributes + _sortable_fields.keys).uniq.map(&:to_s)
 
         # Add common model timestamp fields if the model supports them
         if model.respond_to?(:column_names)
