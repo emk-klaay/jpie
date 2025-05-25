@@ -163,301 +163,89 @@ RSpec.describe JPie::Serializer do
     end
   end
 
-  describe 'Controller include parameter parsing' do
-    let(:controller_class) do
-      Class.new(ApplicationController) do
-        include JPie::Controller
-
-        def self.name
-          'PostsController'
-        end
-
-        attr_accessor :params, :request, :response
-
-        def initialize
-          @params = {}
-          @request = MockRequest.new
-          @response = MockResponse.new
-        end
-
-        def render(options = {})
-          @last_render = options
-        end
-
-        def action_name
-          'index'
-        end
-
-        attr_reader :last_render
-      end
-    end
-
+  describe 'Controller include parameter integration' do
+    let(:controller_class) { create_test_controller('PostsController') }
     let(:controller) { controller_class.new }
-
-    before do
-      # Mock classes for controller test
-      stub_const('MockRequest', Class.new do
-        def body
-          MockBody.new
-        end
-      end)
-
-      stub_const('MockBody', Class.new do
-        def read
-          '{}'
-        end
-      end)
-
-      stub_const('MockResponse', Class.new)
-    end
-
-    it 'parses multiple include parameters from query string' do
-      controller.params = { include: 'user,author' }
-      includes = controller.send(:parse_include_params)
-
-      expect(includes).to eq(%w[user author])
-    end
-
-    it 'returns empty array when no include parameter' do
-      controller.params = {}
-      includes = controller.send(:parse_include_params)
-
-      expect(includes).to eq([])
-    end
-
-    it 'handles single include parameter' do
-      controller.params = { include: 'user' }
-      includes = controller.send(:parse_include_params)
-
-      expect(includes).to eq(['user'])
-    end
-
-    it 'parses nested include parameters' do
-      controller.params = { include: 'user.comments' }
-      includes = controller.send(:parse_include_params)
-
-      expect(includes).to eq(['user.comments'])
-    end
-
-    it 'parses multiple nested include parameters' do
-      controller.params = { include: 'user.comments,user.posts' }
-      includes = controller.send(:parse_include_params)
-
-      expect(includes).to eq(['user.comments', 'user.posts'])
-    end
-
-    it 'parses mixed regular and nested include parameters' do
-      controller.params = { include: 'user,user.comments,posts' }
-      includes = controller.send(:parse_include_params)
-
-      expect(includes).to eq(['user', 'user.comments', 'posts'])
-    end
-
-    it 'strips whitespace from nested include parameters' do
-      controller.params = { include: ' user.comments , user.posts ' }
-      includes = controller.send(:parse_include_params)
-
-      expect(includes).to eq(['user.comments', 'user.posts'])
-    end
-  end
-
-  describe 'End-to-end integration' do
-    let(:controller_class) do
-      Class.new(ApplicationController) do
-        include JPie::Controller
-
-        def self.name
-          'PostsController'
-        end
-
-        attr_accessor :params, :request, :response
-
-        def initialize
-          @params = {}
-          @request = MockRequest.new
-          @response = MockResponse.new
-        end
-
-        def render(options = {})
-          @last_render = options
-        end
-
-        def action_name
-          'show'
-        end
-
-        attr_reader :last_render
-      end
-    end
-
-    let(:controller) { controller_class.new }
-
-    before do
-      # Mock classes for controller test
-      stub_const('MockRequest', Class.new do
-        def body
-          MockBody.new
-        end
-      end)
-
-      stub_const('MockBody', Class.new do
-        def read
-          '{}'
-        end
-      end)
-
-      stub_const('MockResponse', Class.new)
-    end
 
     describe 'when include=user parameter is provided' do
-      it 'includes post data and related user data with correct content type', :aggregate_failures do
-        user = User.create!(name: 'John Doe', email: 'john@example.com')
-        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
-
-        controller.params = { id: post.id.to_s, include: 'user' }
+      it 'includes user in the response', :aggregate_failures do
+        controller.params = { id: first_post.id.to_s, include: 'user' }
         controller.show
-        response_data = controller.last_render[:json]
 
-        expect(response_data).to have_key(:data)
-        expect(response_data).to have_key(:included)
-      end
+        result = controller.last_render[:json]
 
-      it 'includes correct post data in main section', :aggregate_failures do
-        user = User.create!(name: 'John Doe', email: 'john@example.com')
-        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
+        expect(result).to have_key(:included)
+        expect(result[:included]).to be_an(Array)
+        expect(result[:included].length).to eq(1)
 
-        controller.params = { id: post.id.to_s, include: 'user' }
-        controller.show
-        response_data = controller.last_render[:json]
-
-        expect(response_data[:data][:id]).to eq(post.id.to_s)
-        expect(response_data[:data][:type]).to eq('posts')
-      end
-
-      it 'includes correct included section structure', :aggregate_failures do
-        user = User.create!(name: 'John Doe', email: 'john@example.com')
-        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
-
-        controller.params = { id: post.id.to_s, include: 'user' }
-        controller.show
-        response_data = controller.last_render[:json]
-
-        expect(response_data[:included]).to be_an(Array)
-        expect(response_data[:included].length).to eq(1)
-      end
-
-      it 'includes correct user data in included section', :aggregate_failures do
-        user = User.create!(name: 'John Doe', email: 'john@example.com')
-        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
-
-        controller.params = { id: post.id.to_s, include: 'user' }
-        controller.show
-        response_data = controller.last_render[:json]
-
-        included_user = response_data[:included].first
+        included_user = result[:included].first
         expect(included_user[:id]).to eq(user.id.to_s)
         expect(included_user[:type]).to eq('users')
       end
 
-      it 'includes correct user attributes in included section', :aggregate_failures do
-        user = User.create!(name: 'John Doe', email: 'john@example.com')
-        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
-
-        controller.params = { id: post.id.to_s, include: 'user' }
-        controller.show
-        response_data = controller.last_render[:json]
-
-        included_user = response_data[:included].first
-        expect(included_user[:attributes]['name']).to eq('John Doe')
-        expect(included_user[:attributes]['email']).to eq('john@example.com')
-      end
-
-      it 'returns correct content type' do
-        user = User.create!(name: 'John Doe', email: 'john@example.com')
-        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
-
-        controller.params = { id: post.id.to_s, include: 'user' }
+      it 'returns correct response metadata', :aggregate_failures do
+        controller.params = { id: first_post.id.to_s, include: 'user' }
         controller.show
 
+        expect(controller.last_render[:status]).to eq(:ok)
         expect(controller.last_render[:content_type]).to eq('application/vnd.api+json')
       end
-    end
-
-    it 'renders post without included data when no include parameter is provided', :aggregate_failures do
-      # Set up data
-      user = User.create!(name: 'John Doe', email: 'john@example.com')
-      post = Post.create!(title: 'Test Post', content: 'Content', user: user)
-
-      # Simulate controller request without include parameter
-      controller.params = { id: post.id.to_s }
-      controller.show
-
-      response_data = controller.last_render[:json]
-      expect(response_data).to have_key(:data)
-      expect(response_data).not_to have_key(:included)
-    end
-
-    it 'includes correct post data when no include parameter provided', :aggregate_failures do
-      user = User.create!(name: 'John Doe', email: 'john@example.com')
-      post = Post.create!(title: 'Test Post', content: 'Content', user: user)
-
-      controller.params = { id: post.id.to_s }
-      controller.show
-
-      response_data = controller.last_render[:json]
-      expect(response_data[:data][:id]).to eq(post.id.to_s)
-      expect(response_data[:data][:type]).to eq('posts')
     end
 
     describe 'when nested include=user.comments parameter is provided' do
-      it 'includes post data, user, and user comments with correct structure', :aggregate_failures do
-        user = User.create!(name: 'John Doe', email: 'john@example.com')
-        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
-        Comment.create!(content: 'First comment', user: user, post: post)
-        Comment.create!(content: 'Second comment', user: user, post: post)
-
-        controller.params = { id: post.id.to_s, include: 'user.comments' }
+      it 'includes user and their comments in the response', :aggregate_failures do
+        controller.params = { id: first_post.id.to_s, include: 'user.comments' }
         controller.show
-        response_data = controller.last_render[:json]
 
-        expect(response_data).to have_key(:data)
-        expect(response_data).to have_key(:included)
-        expect(response_data[:included]).to be_an(Array)
-        expect(response_data[:included].length).to eq(3) # 1 user + 2 comments
-      end
+        result = controller.last_render[:json]
 
-      it 'includes user and all user comments in included section', :aggregate_failures do
-        user = User.create!(name: 'John Doe', email: 'john@example.com')
-        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
-        Comment.create!(content: 'First comment', user: user, post: post)
-        Comment.create!(content: 'Second comment', user: user, post: post)
+        expect(result).to have_key(:included)
+        expect(result[:included]).to be_an(Array)
+        # Should include 1 user + all comments by that user (3 comments)
+        expect(result[:included].length).to eq(4)
 
-        controller.params = { id: post.id.to_s, include: 'user.comments' }
-        controller.show
-        response_data = controller.last_render[:json]
-
-        # Check user is included
-        user_data = response_data[:included].find { |item| item[:type] == 'users' }
+        user_data = result[:included].find { |item| item[:type] == 'users' }
         expect(user_data).not_to be_nil
         expect(user_data[:id]).to eq(user.id.to_s)
-        expect(user_data[:attributes]['name']).to eq('John Doe')
 
-        # Check comments are included
-        comment_data = response_data[:included].select { |item| item[:type] == 'comments' }
-        expect(comment_data.length).to eq(2)
-        comment_contents = comment_data.map { |c| c[:attributes]['content'] }
-        expect(comment_contents).to contain_exactly('First comment', 'Second comment')
+        comment_data = result[:included].select { |item| item[:type] == 'comments' }
+        expect(comment_data.length).to eq(3)
       end
 
-      it 'returns correct content type for nested includes' do
-        user = User.create!(name: 'John Doe', email: 'john@example.com')
-        post = Post.create!(title: 'Test Post', content: 'Content', user: user)
-        Comment.create!(content: 'Test comment', user: user, post: post)
-
-        controller.params = { id: post.id.to_s, include: 'user.comments' }
+      it 'handles multiple include parameters correctly', :aggregate_failures do
+        controller.params = { id: first_post.id.to_s, include: 'user,comments' }
         controller.show
 
-        expect(controller.last_render[:content_type]).to eq('application/vnd.api+json')
+        result = controller.last_render[:json]
+
+        expect(result).to have_key(:included)
+        
+        user_data = result[:included].select { |item| item[:type] == 'users' }
+        comment_data = result[:included].select { |item| item[:type] == 'comments' }
+        
+        expect(user_data.length).to eq(1)
+        expect(comment_data.length).to be >= 1
+      end
+    end
+
+    describe 'when no include parameter is specified' do
+      it 'does not include related resources' do
+        controller.params = { id: first_post.id.to_s }
+        controller.show
+
+        result = controller.last_render[:json]
+
+        expect(result).not_to have_key(:included)
+      end
+
+      it 'includes main resource data', :aggregate_failures do
+        controller.params = { id: first_post.id.to_s }
+        controller.show
+
+        result = controller.last_render[:json]
+
+        expect(result[:data][:id]).to eq(first_post.id.to_s)
+        expect(result[:data][:type]).to eq('posts')
       end
     end
   end

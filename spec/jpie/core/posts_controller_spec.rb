@@ -14,71 +14,66 @@ class ApplicationController
 end
 
 RSpec.describe 'PostsController' do
-  before do
-    # Define mock classes for PostsController test
-    stub_const('MockRequest', Class.new do
-      def body
-        MockBody.new
-      end
-    end)
-
-    stub_const('MockBody', Class.new do
-      def read
-        '{}'
-      end
-    end)
-
-    stub_const('MockResponse', Class.new)
-  end
-
-  # Test controller that should automatically infer PostResource from its name
-  let(:controller_class) do
-    Class.new(ApplicationController) do
-      include JPie::Controller
-
-      def self.name
-        'PostsController'
-      end
-
-      attr_accessor :params, :request, :response
-
-      def initialize
-        @params = {}
-        @request = MockRequest.new
-        @response = MockResponse.new
-      end
-
-      def render(options = {})
-        @last_render = options
-      end
-
-      def action_name
-        'test'
-      end
-
-      attr_reader :last_render
-    end
-  end
-
+  let(:controller_class) { create_test_controller('PostsController') }
   let(:controller) { controller_class.new }
+  let(:user) { User.create!(name: 'Test User', email: 'test@example.com') }
+  let(:post) { Post.create!(title: 'Test Post', content: 'Test content', user: user) }
 
-  describe 'resource inference' do
-    it 'automatically infers PostResource from PostsController' do
-      expect(controller.resource_class).to eq(PostResource)
-    end
-
-    it 'has access to Post model through the resource' do
-      expect(controller.send(:model_class)).to eq(Post)
-    end
-  end
-
-  describe 'CRUD methods' do
+  describe 'CRUD operations' do
     it 'defines all CRUD methods', :aggregate_failures do
       expect(controller).to respond_to(:index)
       expect(controller).to respond_to(:show)
       expect(controller).to respond_to(:create)
       expect(controller).to respond_to(:update)
       expect(controller).to respond_to(:destroy)
+    end
+  end
+
+  describe '#index' do
+    before { post } # Ensure post exists
+
+    it 'renders all posts' do
+      controller.index
+      expect_json_api_response(controller)
+    end
+
+    it 'returns array data for index' do
+      controller.index
+      expect(controller.last_render[:json][:data]).to be_an(Array)
+    end
+
+    it 'returns ok status for index' do
+      controller.index
+      expect(controller.last_render[:status]).to eq(:ok)
+    end
+  end
+
+  describe '#show' do
+    it 'renders a single post' do
+      controller.params = { id: post.id.to_s }
+      controller.show
+
+      expect_json_api_response(controller)
+    end
+
+    it 'returns hash data for show' do
+      controller.params = { id: post.id.to_s }
+      controller.show
+
+      expect(controller.last_render[:json][:data]).to be_a(Hash)
+    end
+
+    it 'returns ok status for show' do
+      controller.params = { id: post.id.to_s }
+      controller.show
+
+      expect(controller.last_render[:status]).to eq(:ok)
+    end
+  end
+
+  describe 'resource class inference' do
+    it 'infers PostResource from PostsController' do
+      expect(controller.send(:resource_class)).to eq(PostResource)
     end
   end
 end

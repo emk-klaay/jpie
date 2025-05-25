@@ -20,6 +20,8 @@ require 'ostruct'
 require_relative 'support/database'
 require_relative 'support/resources'
 require_relative 'support/generator_helper'
+require_relative 'support/controller_helpers'
+require_relative 'support/shared_examples'
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|

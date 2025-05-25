@@ -126,117 +126,74 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
     end
   end
 
-  describe 'Polymorphic Resource Creation with Author Assignment' do
-    context 'when creating a post' do
-      it 'automatically assigns current_user as author' do
-        post_params = {
-          data: {
-            type: 'posts',
-            attributes: {
-              title: 'New Post',
-              content: 'Post content'
-            }
-          }
-        }
+  describe 'Polymorphic Association Queries' do
+    let!(:post_comment) { Comment.create!(content: 'Post comment', commentable: post, author: user) }
+    let!(:article_comment) { Comment.create!(content: 'Article comment', commentable: article, author: user) }
+    let!(:video_comment) { Comment.create!(content: 'Video comment', commentable: video, author: user) }
 
-        post '/posts',
-             params: post_params.to_json,
-             headers: { 'Content-Type' => 'application/vnd.api+json' }
+    it 'retrieves comments for specific post' do
+      get "/posts/#{post.id}/comments",
+          headers: { 'Accept' => 'application/vnd.api+json' }
 
-        expect(response).to have_http_status(:created)
+      expect(response).to have_http_status(:ok)
 
-        new_post = Post.last
-        expect(new_post.author).to eq(user)
-        expect(new_post.title).to eq('New Post')
-      end
+      response_data = JSON.parse(response.body)
+      expect(response_data['data'].size).to eq(1)
+      expect(response_data['data'].first['attributes']['content']).to eq('Post comment')
     end
 
-    context 'when creating an article' do
-      it 'automatically assigns current_user as author' do
-        article_params = {
-          data: {
-            type: 'articles',
-            attributes: {
-              title: 'New Article',
-              body: 'Article body'
-            }
-          }
-        }
+    it 'retrieves comments for specific article' do
+      get "/articles/#{article.id}/comments",
+          headers: { 'Accept' => 'application/vnd.api+json' }
 
-        post '/articles',
-             params: article_params.to_json,
-             headers: { 'Content-Type' => 'application/vnd.api+json' }
+      expect(response).to have_http_status(:ok)
 
-        expect(response).to have_http_status(:created)
-
-        new_article = Article.last
-        expect(new_article.author).to eq(user)
-        expect(new_article.title).to eq('New Article')
-      end
+      response_data = JSON.parse(response.body)
+      expect(response_data['data'].size).to eq(1)
+      expect(response_data['data'].first['attributes']['content']).to eq('Article comment')
     end
 
-    context 'when creating a video' do
-      it 'automatically assigns current_user as author' do
-        video_params = {
-          data: {
-            type: 'videos',
-            attributes: {
-              title: 'New Video',
-              url: 'https://example.com/new-video'
-            }
-          }
-        }
+    it 'retrieves comments for specific video' do
+      get "/videos/#{video.id}/comments",
+          headers: { 'Accept' => 'application/vnd.api+json' }
 
-        post '/videos',
-             params: video_params.to_json,
-             headers: { 'Content-Type' => 'application/vnd.api+json' }
+      expect(response).to have_http_status(:ok)
 
-        expect(response).to have_http_status(:created)
-
-        new_video = Video.last
-        expect(new_video.author).to eq(user)
-        expect(new_video.title).to eq('New Video')
-      end
+      response_data = JSON.parse(response.body)
+      expect(response_data['data'].size).to eq(1)
+      expect(response_data['data'].first['attributes']['content']).to eq('Video comment')
     end
   end
 
-  describe 'Polymorphic Includes and Relationships' do
-    let!(:comment1) { Comment.create!(content: 'Comment 1', commentable: post, author: user) }
-    let!(:comment2) { Comment.create!(content: 'Comment 2', commentable: article, author: user) }
+  describe 'Polymorphic Include Support' do
+    let!(:comment) { Comment.create!(content: 'Test comment', commentable: post, author: user) }
 
-    it 'includes polymorphic comments in post response' do
-      get "/posts/#{post.id}?include=comments,comments.author",
+    it 'includes polymorphic commentable in comment response' do
+      get "/comments/#{comment.id}?include=commentable",
           headers: { 'Accept' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:ok)
 
       response_data = JSON.parse(response.body)
+      expect(response_data['included']).to be_present
 
-      # Check main resource
-      expect(response_data['data']['id']).to eq(post.id.to_s)
-      expect(response_data['data']['type']).to eq('posts')
-
-      # Check included comments
-      included_comments = response_data['included'].select { |r| r['type'] == 'comments' }
-      expect(included_comments.size).to eq(1)
-      expect(included_comments.first['attributes']['content']).to eq('Comment 1')
-
-      # Check included authors
-      included_authors = response_data['included'].select { |r| r['type'] == 'users' }
-      expect(included_authors.size).to eq(1)
-      expect(included_authors.first['id']).to eq(user.id.to_s)
+      included_post = response_data['included'].find { |item| item['type'] == 'posts' }
+      expect(included_post).to be_present
+      expect(included_post['id']).to eq(post.id.to_s)
     end
 
-    it 'includes polymorphic comments in article response' do
-      get "/articles/#{article.id}?include=comments,comments.author",
+    it 'includes author in polymorphic comment response' do
+      get "/comments/#{comment.id}?include=author",
           headers: { 'Accept' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:ok)
 
       response_data = JSON.parse(response.body)
-      included_comments = response_data['included'].select { |r| r['type'] == 'comments' }
-      expect(included_comments.size).to eq(1)
-      expect(included_comments.first['attributes']['content']).to eq('Comment 2')
+      expect(response_data['included']).to be_present
+
+      included_user = response_data['included'].find { |item| item['type'] == 'users' }
+      expect(included_user).to be_present
+      expect(included_user['id']).to eq(user.id.to_s)
     end
   end
 

@@ -3,84 +3,13 @@
 require 'spec_helper'
 
 RSpec.describe 'CommentsController' do
-  before do
-    # Define mock classes for CommentsController test
-    stub_const('MockRequest', Class.new do
-      def body
-        MockBody.new
-      end
-    end)
-
-    stub_const('MockBody', Class.new do
-      def read
-        '{}'
-      end
-    end)
-
-    stub_const('MockResponse', Class.new)
-
-    # Define a local base controller for this test
-    stub_const('BaseController', Class.new do
-      def self.rescue_from(exception_class, with: nil)
-        # Mock implementation for testing
-      end
-
-      def head(status)
-        # Mock implementation
-      end
-    end)
-  end
-
-  # Test controller that should automatically infer CommentResource from its name
-  let(:controller_class) do
-    Class.new(BaseController) do
-      include JPie::Controller
-
-      def self.name
-        'CommentsController'
-      end
-
-      attr_accessor :params, :request, :response
-
-      def initialize
-        @params = {}
-        @request = MockRequest.new
-        @response = MockResponse.new
-      end
-
-      def render(options = {})
-        @last_render = options
-      end
-
-      def action_name
-        'test'
-      end
-
-      attr_reader :last_render
-    end
-  end
-
+  let(:controller_class) { create_test_controller('CommentsController') }
   let(:controller) { controller_class.new }
-  let(:user) { User.create!(name: 'John Doe', email: 'john@example.com') }
-  let(:post_instance) do
-    Post.create!(
-      title: 'Test Post',
-      content: 'This is a test post content',
-      user: user
-    )
-  end
+  let(:user) { User.create!(name: 'Test User', email: 'test@example.com') }
+  let(:post) { Post.create!(title: 'Test Post', content: 'Test content', user: user) }
+  let(:comment) { Comment.create!(content: 'Test comment', user: user, post: post) }
 
-  describe 'resource inference' do
-    it 'automatically infers CommentResource from CommentsController' do
-      expect(controller.resource_class).to eq(CommentResource)
-    end
-
-    it 'has access to Comment model through the resource' do
-      expect(controller.send(:model_class)).to eq(Comment)
-    end
-  end
-
-  describe 'CRUD methods' do
+  describe 'CRUD operations' do
     it 'defines all CRUD methods', :aggregate_failures do
       expect(controller).to respond_to(:index)
       expect(controller).to respond_to(:show)
@@ -90,19 +19,60 @@ RSpec.describe 'CommentsController' do
     end
   end
 
-  describe 'comment creation and relationships' do
-    it 'can create comments with proper associations' do
-      comment = Comment.create!(
-        content: 'Test comment content',
-        user: user,
-        post: post_instance
-      )
+  describe '#index' do
+    before { comment } # Ensure comment exists
 
-      resource = CommentResource.new(comment)
+    it 'renders all comments' do
+      controller.index
+      expect_json_api_response(controller)
+    end
 
-      expect(resource.content).to eq('Test comment content')
-      expect(resource.user).to eq(user)
-      expect(resource.post).to eq(post_instance)
+    it 'returns array data for index' do
+      controller.index
+      expect(controller.last_render[:json][:data]).to be_an(Array)
+    end
+
+    it 'returns ok status for index' do
+      controller.index
+      expect(controller.last_render[:status]).to eq(:ok)
+    end
+  end
+
+  describe '#show' do
+    it 'renders a single comment' do
+      controller.params = { id: comment.id.to_s }
+      controller.show
+
+      expect_json_api_response(controller)
+    end
+
+    it 'returns hash data for show' do
+      controller.params = { id: comment.id.to_s }
+      controller.show
+
+      expect(controller.last_render[:json][:data]).to be_a(Hash)
+    end
+
+    it 'returns ok status for show' do
+      controller.params = { id: comment.id.to_s }
+      controller.show
+
+      expect(controller.last_render[:status]).to eq(:ok)
+    end
+  end
+
+  describe '#destroy' do
+    it 'returns no content status' do
+      controller.params = { id: comment.id.to_s }
+      controller.destroy
+
+      expect(controller.last_head).to eq(:no_content)
+    end
+  end
+
+  describe 'resource class inference' do
+    it 'infers CommentResource from CommentsController' do
+      expect(controller.send(:resource_class)).to eq(CommentResource)
     end
   end
 end
