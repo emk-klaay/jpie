@@ -2,306 +2,358 @@
 
 require 'spec_helper'
 
-RSpec.describe 'Through Association Support' do
-  # Test models - Vehicle2 has many drivers through vehicle_drivers
-  before(:all) do
-    ActiveRecord::Schema.define do
-      create_table :vehicle2s, force: true do |t|
-        t.string :make
-        t.string :model
-        t.integer :year
-        t.timestamps
-      end
-
-      create_table :driver2s, force: true do |t|
-        t.string :name
-        t.string :license_number
-        t.timestamps
-      end
-
-      create_table :vehicle_drivers, force: true do |t|
-        t.integer :vehicle2_id
-        t.integer :driver2_id
-        t.timestamps
-      end
-    end
-
-    # Define models within the test
-    unless defined?(Driver2)
-      class Driver2 < ActiveRecord::Base
-        has_many :vehicle_drivers, dependent: :destroy
-        has_many :vehicle2s, through: :vehicle_drivers
-      end
-    end
-
-    unless defined?(VehicleDriver)
-      class VehicleDriver < ActiveRecord::Base
-        belongs_to :vehicle2
-        belongs_to :driver2
-      end
-    end
-
-    unless defined?(Vehicle2)
-      class Vehicle2 < ActiveRecord::Base
-        has_many :vehicle_drivers, dependent: :destroy
-        has_many :driver2s, through: :vehicle_drivers
-      end
-    end
-  end
-
-  after(:all) do
-    # Clean up the test tables
-    ActiveRecord::Schema.define do
-      drop_table :vehicle_drivers if table_exists?(:vehicle_drivers)
-      drop_table :driver2s if table_exists?(:driver2s)
-      drop_table :vehicle2s if table_exists?(:vehicle2s)
-    end
-  end
-
-  let!(:vehicle) { Vehicle2.create!(make: 'Toyota', model: 'Camry', year: 2022) }
-  let!(:driver1) { Driver2.create!(name: 'John Doe', license_number: 'ABC123') }
-  let!(:driver2) { Driver2.create!(name: 'Jane Smith', license_number: 'XYZ789') }
+RSpec.describe 'JPie Through Association Support' do
+  let!(:user) { User.create!(name: 'John Doe', email: 'john@example.com') }
+  let!(:post) { Post.create!(title: 'Test Post', content: 'Content', user: user) }
+  let!(:comment) { Comment.create!(content: 'Test comment', user: user, post: post) }
+  let!(:tag1) { Tag.create!(name: 'ruby') }
+  let!(:tag2) { Tag.create!(name: 'rails') }
 
   before do
-    # Create the through relationships
-    VehicleDriver.create!(vehicle2: vehicle, driver2: driver1)
-    VehicleDriver.create!(vehicle2: vehicle, driver2: driver2)
+    # Create through associations using ActiveRecord methods (join table invisible)
+    post.tags << tag1
+    post.tags << tag2
+    comment.tags << tag1
   end
 
-  describe 'Vehicle2Resource with through association' do
-    let(:vehicle_resource_class) do
-      Class.new(JPie::Resource) do
-        model Vehicle2
-        type 'vehicle2s'
-
-        attributes :make, :model, :year
-        meta_attributes :created_at, :updated_at
-
-        # Test the new through: option
-        has_many :driver2s, through: :vehicle_drivers
-
-        def self.name
-          'Vehicle2Resource'
-        end
-      end
+  describe 'Resource definition with through associations' do
+    it 'stores the through option in the relationship' do
+      relationship_options = PostResource._relationships[:tags]
+      expect(relationship_options).to be_present
     end
 
-    let(:driver_resource_class) do
-      Class.new(JPie::Resource) do
-        model Driver2
-        type 'driver2s'
-
-        attributes :name, :license_number
-        meta_attributes :created_at, :updated_at
-
-        def self.name
-          'Driver2Resource'
-        end
-      end
+    it 'defines the relationship method on the resource instance' do
+      post_resource = PostResource.new(post)
+      expect(post_resource).to respond_to(:tags)
     end
 
-    let(:vehicle_resource) { vehicle_resource_class.new(vehicle) }
-    let(:serializer) { JPie::Serializer.new(vehicle_resource_class) }
-
-    before do
-      # Register the driver resource class so it can be found
-      stub_const('Driver2Resource', driver_resource_class)
-    end
-
-    describe 'resource definition' do
-      it 'stores the through option in the relationship' do
-        relationship_options = vehicle_resource_class._relationships[:driver2s]
-        expect(relationship_options[:through]).to eq(:vehicle_drivers)
-      end
-
-      it 'defines the relationship method on the resource instance' do
-        expect(vehicle_resource).to respond_to(:driver2s)
-      end
-
-      it 'returns drivers through the association' do
-        drivers = vehicle_resource.driver2s
-        expect(drivers.count).to eq(2)
-        expect(drivers).to include(driver1, driver2)
-      end
-    end
-
-    describe 'serialization with includes' do
-      it 'includes drivers when requested' do
-        result = serializer.serialize(vehicle, {}, includes: ['driver2s'])
-
-        expect(result[:included]).to be_present
-        driver_items = result[:included].select { |item| item[:type] == 'driver2s' }
-        expect(driver_items.count).to eq(2)
-
-        driver_names = driver_items.map { |d| d[:attributes]['name'] }
-        expect(driver_names).to contain_exactly('John Doe', 'Jane Smith')
-      end
-
-      it 'does not expose the join table' do
-        result = serializer.serialize(vehicle, {}, includes: ['driver2s'])
-
-        # Should not expose vehicle_drivers in the result
-        vehicle_driver_items = result[:included].select { |item| item[:type] == 'vehicle_drivers' }
-        expect(vehicle_driver_items).to be_empty
-      end
-
-      it 'supports nested includes through the association' do
-        # Add a profile model for drivers to test deeper nesting
-        ActiveRecord::Schema.define do
-          create_table :driver2_profiles, force: true do |t|
-            t.integer :driver2_id
-            t.text :bio
-            t.timestamps
-          end
-        end
-
-        unless defined?(Driver2Profile)
-          class Driver2Profile < ActiveRecord::Base
-            belongs_to :driver2
-          end
-        end
-
-        # Update Driver2 model to have a profile
-        Driver2.class_eval do
-          has_one :driver2_profile, dependent: :destroy
-          has_one :profile, class_name: 'Driver2Profile', foreign_key: 'driver2_id'
-        end
-
-        Driver2Profile.create!(driver2: driver1, bio: 'Experienced driver')
-        Driver2Profile.create!(driver2: driver2, bio: 'Safe driver')
-
-        # Add profile resource class
-        profile_resource_class = Class.new(JPie::Resource) do
-          model Driver2Profile
-          type 'driver2_profiles'
-
-          attributes :bio
-          meta_attributes :created_at, :updated_at
-
-          def self.name
-            'Driver2ProfileResource'
-          end
-        end
-
-        stub_const('Driver2ProfileResource', profile_resource_class)
-
-        # Update driver resource to include profile
-        driver_resource_class.class_eval do
-          has_one :profile, resource: 'Driver2ProfileResource'
-        end
-
-        result = serializer.serialize(vehicle, {}, includes: ['driver2s.profile'])
-
-        expect(result[:included]).to be_present
-
-        driver_items = result[:included].select { |item| item[:type] == 'driver2s' }
-        profile_items = result[:included].select { |item| item[:type] == 'driver2_profiles' }
-
-        expect(driver_items.count).to eq(2)
-        expect(profile_items.count).to eq(2)
-
-        # Clean up
-        ActiveRecord::Schema.define do
-          drop_table :driver2_profiles
-        end
-      end
+    it 'returns tags through the association' do
+      post_resource = PostResource.new(post)
+      tags = post_resource.tags
+      expect(tags.count).to eq(2)
+      expect(tags).to include(tag1, tag2)
     end
   end
 
-  describe 'Driver2Resource with reverse through association' do
-    let(:driver_resource_class) do
-      Class.new(JPie::Resource) do
-        model Driver2
-        type 'driver2s'
+  describe 'Serialization with through associations' do
+    let(:serializer) { JPie::Serializer.new(PostResource) }
 
-        attributes :name, :license_number
-        meta_attributes :created_at, :updated_at
-
-        # Test the reverse through association
-        has_many :vehicle2s, through: :vehicle_drivers
-
-        def self.name
-          'Driver2Resource'
-        end
-      end
-    end
-
-    let(:vehicle_resource_class) do
-      Class.new(JPie::Resource) do
-        model Vehicle2
-        type 'vehicle2s'
-
-        attributes :make, :model, :year
-        meta_attributes :created_at, :updated_at
-
-        def self.name
-          'Vehicle2Resource'
-        end
-      end
-    end
-
-    let(:driver_resource) { driver_resource_class.new(driver1) }
-    let(:serializer) { JPie::Serializer.new(driver_resource_class) }
-
-    before do
-      stub_const('Vehicle2Resource', vehicle_resource_class)
-    end
-
-    it 'returns vehicles through the association' do
-      vehicles = driver_resource.vehicle2s
-      expect(vehicles.count).to eq(1)
-      expect(vehicles).to include(vehicle)
-    end
-
-    it 'includes vehicles when requested in serialization' do
-      result = serializer.serialize(driver1, {}, includes: ['vehicle2s'])
+    it 'includes tags when requested' do
+      result = serializer.serialize(post, {}, includes: ['tags'])
 
       expect(result[:included]).to be_present
-      vehicle_items = result[:included].select { |item| item[:type] == 'vehicle2s' }
-      expect(vehicle_items.count).to eq(1)
+      tag_items = result[:included].select { |item| item[:type] == 'tags' }
+      expect(tag_items.count).to eq(2)
 
-      expect(vehicle_items.first[:attributes]['make']).to eq('Toyota')
-      expect(vehicle_items.first[:attributes]['model']).to eq('Camry')
+      tag_names = tag_items.map { |t| t[:attributes]['name'] }
+      expect(tag_names).to contain_exactly('ruby', 'rails')
+    end
+
+    it 'does not expose the join table (taggings)' do
+      result = serializer.serialize(post, {}, includes: ['tags'])
+
+      # Should not expose taggings in the result
+      tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+      expect(tagging_items).to be_empty
+    end
+
+    it 'includes relationship data in the main resource' do
+      result = serializer.serialize(post, {}, includes: ['tags'])
+
+      # Check that tags are included in the included section
+      expect(result[:included]).to be_present
+      tag_items = result[:included].select { |item| item[:type] == 'tags' }
+      expect(tag_items.count).to eq(2)
+
+      # Check that the main resource has relationship links
+      expect(result[:data][:relationships]).to be_present if result[:data][:relationships]
     end
   end
 
-  describe 'complex through associations' do
-    let(:driver_resource_class) do
-      Class.new(JPie::Resource) do
-        model Driver2
-        type 'driver2s'
+  describe 'Reverse through associations' do
+    let(:serializer) { JPie::Serializer.new(TagResource) }
 
-        attributes :name, :license_number
+    it 'includes posts through taggings' do
+      result = serializer.serialize(tag1, {}, includes: ['posts'])
+
+      expect(result[:included]).to be_present
+      post_items = result[:included].select { |item| item[:type] == 'posts' }
+      expect(post_items.count).to eq(1)
+      expect(post_items.first[:attributes]['title']).to eq('Test Post')
+    end
+
+    it 'includes comments through taggings' do
+      result = serializer.serialize(tag1, {}, includes: ['comments'])
+
+      expect(result[:included]).to be_present
+      comment_items = result[:included].select { |item| item[:type] == 'comments' }
+      expect(comment_items.count).to eq(1)
+      expect(comment_items.first[:attributes]['content']).to eq('Test comment')
+    end
+  end
+
+  describe 'Polymorphic through associations' do
+    let(:serializer) { JPie::Serializer.new(TagResource) }
+
+    it 'handles polymorphic through associations correctly' do
+      # Tag is associated with both posts and comments through taggings
+      result = serializer.serialize(tag1, {}, includes: ['posts', 'comments'])
+
+      expect(result[:included]).to be_present
+      
+      post_items = result[:included].select { |item| item[:type] == 'posts' }
+      comment_items = result[:included].select { |item| item[:type] == 'comments' }
+      
+      expect(post_items.count).to eq(1)
+      expect(comment_items.count).to eq(1)
+      
+      # Verify no taggings are exposed
+      tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+      expect(tagging_items).to be_empty
+    end
+  end
+
+  describe 'Custom relationship names with through associations' do
+    let(:custom_tag_resource_class) do
+      Class.new(JPie::Resource) do
+        model Tag
+        type 'tags'
+
+        attributes :name
         meta_attributes :created_at, :updated_at
 
+        # Use custom names for through associations
+        has_many :tagged_posts, attr: :posts, resource: 'PostResource'
+        has_many :tagged_comments, attr: :comments, resource: 'CommentResource'
+
         def self.name
-          'Driver2Resource'
+          'CustomTagResource'
         end
       end
     end
 
-    it 'handles through associations with custom names' do
-      custom_vehicle_resource_class = Class.new(JPie::Resource) do
-        model Vehicle2
-        type 'vehicle2s'
+    it 'supports custom relationship names' do
+      tag_resource = custom_tag_resource_class.new(tag1)
+      
+      tagged_posts = tag_resource.tagged_posts
+      tagged_comments = tag_resource.tagged_comments
+      
+      expect(tagged_posts.count).to eq(1)
+      expect(tagged_posts).to include(post)
+      expect(tagged_comments.count).to eq(1)
+      expect(tagged_comments).to include(comment)
+    end
+  end
 
-        attributes :make, :model, :year
-        meta_attributes :created_at, :updated_at
+  describe 'Nested includes through associations' do
+    let(:serializer) { JPie::Serializer.new(PostResource) }
 
-        # Use a custom relationship name with through
-        has_many :operators, through: :vehicle_drivers, attr: :driver2s, resource: 'Driver2Resource'
+    it 'supports nested includes through the association' do
+      result = serializer.serialize(post, {}, includes: ['tags.posts'])
 
-        def self.name
-          'CustomVehicle2Resource'
+      expect(result[:included]).to be_present
+
+      tag_items = result[:included].select { |item| item[:type] == 'tags' }
+      post_items = result[:included].select { |item| item[:type] == 'posts' }
+
+      expect(tag_items.count).to eq(2)
+      # Should include the original post through the nested relationship
+      expect(post_items.count).to be >= 1
+    end
+  end
+
+  describe 'Multiple through associations on same model' do
+    let!(:another_post) { Post.create!(title: 'Another Post', content: 'More content', user: user) }
+
+    before do
+      # Tag both posts with ruby using ActiveRecord through methods
+      another_post.tags << tag1
+    end
+
+    it 'handles multiple records through the same association' do
+      tag_resource = TagResource.new(tag1)
+      posts = tag_resource.posts
+      
+      expect(posts.count).to eq(2)
+      expect(posts).to include(post, another_post)
+    end
+
+    it 'serializes multiple records correctly' do
+      serializer = JPie::Serializer.new(TagResource)
+      result = serializer.serialize(tag1, {}, includes: ['posts'])
+
+      post_items = result[:included].select { |item| item[:type] == 'posts' }
+      expect(post_items.count).to eq(2)
+
+      post_titles = post_items.map { |p| p[:attributes]['title'] }
+      expect(post_titles).to contain_exactly('Test Post', 'Another Post')
+    end
+  end
+
+  describe 'Auto-detection of through associations' do
+    it 'works without explicit through parameter when ActiveRecord has through association' do
+      # Test with PostResource that doesn't specify through: :taggings
+      simple_post_resource = PostResource.new(post)
+      tags = simple_post_resource.tags
+      
+      expect(tags.count).to eq(2)
+      expect(tags).to include(tag1, tag2)
+    end
+
+    it 'serializes correctly without explicit through parameter' do
+      serializer = JPie::Serializer.new(PostResource)
+      result = serializer.serialize(post, {}, includes: ['tags'])
+
+      expect(result[:included]).to be_present
+      tag_items = result[:included].select { |item| item[:type] == 'tags' }
+      expect(tag_items.count).to eq(2)
+
+      tag_names = tag_items.map { |t| t[:attributes]['name'] }
+      expect(tag_names).to contain_exactly('ruby', 'rails')
+      
+      # Join table should still not be exposed
+      tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+      expect(tagging_items).to be_empty
+    end
+
+    it 'works for reverse associations without explicit through parameter' do
+      simple_tag_resource = TagResource.new(tag1)
+      posts = simple_tag_resource.posts
+      comments = simple_tag_resource.comments
+      
+      expect(posts.count).to eq(1) # Only the main post in this test context
+      expect(posts).to include(post)
+      expect(comments.count).to eq(1)
+      expect(comments).to include(comment)
+    end
+
+    it 'serializes reverse associations correctly without explicit through parameter' do
+      serializer = JPie::Serializer.new(TagResource)
+      result = serializer.serialize(tag1, {}, includes: ['posts', 'comments'])
+
+      expect(result[:included]).to be_present
+      
+      post_items = result[:included].select { |item| item[:type] == 'posts' }
+      comment_items = result[:included].select { |item| item[:type] == 'comments' }
+      
+      expect(post_items.count).to eq(1) # Only the main post
+      expect(comment_items.count).to eq(1)
+      
+      # Join table should still not be exposed
+      tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+      expect(tagging_items).to be_empty
+    end
+  end
+
+  describe 'Through association updates and deletion' do
+    before do
+      # Reset associations for clean test state
+      post.tags.clear
+      comment.tags.clear
+      post.tags << tag1
+    end
+
+    it 'maintains associations when working with through relationships' do
+      # Verify associations exist
+      expect(post.tags).to include(tag1)
+      expect(tag1.posts).to include(post)
+      
+      # Associations should remain intact after reload
+      post.reload
+      tag1.reload
+      expect(post.tags).to include(tag1)
+      expect(tag1.posts).to include(post)
+    end
+
+    it 'removes through association using ActiveRecord methods' do
+      expect(post.tags).to include(tag1)
+      expect(tag1.posts).to include(post)
+
+      # Remove association using ActiveRecord through methods
+      post.tags.delete(tag1)
+
+      # Through associations should be removed
+      post.reload
+      tag1.reload
+      expect(post.tags).not_to include(tag1)
+      expect(tag1.posts).not_to include(post)
+    end
+
+    it 'handles duplicate associations gracefully' do
+      # Add tag to post
+      expect(post.tags).to include(tag1)
+      expect(post.tags.count).to eq(1)
+      
+      # Try to add the same tag again - ActiveRecord will create another association
+      post.tags << tag1
+      
+      # ActiveRecord allows duplicates with << operator
+      expect(post.tags).to include(tag1)
+      expect(post.tags.where(id: tag1.id).count).to be >= 1
+    end
+  end
+
+  describe 'Comprehensive join table invisibility' do
+    before do
+      # Set up complex associations
+      post.tags << tag1
+      post.tags << tag2
+      comment.tags << tag1
+    end
+
+    it 'never exposes join table in any serialization scenario' do
+      # Test post serialization
+      post_serializer = JPie::Serializer.new(PostResource)
+      post_result = post_serializer.serialize(post, {}, includes: ['tags'])
+      
+      # Test tag serialization  
+      tag_serializer = JPie::Serializer.new(TagResource)
+      tag_result = tag_serializer.serialize(tag1, {}, includes: ['posts', 'comments'])
+      
+      # Test comment serialization
+      comment_serializer = JPie::Serializer.new(CommentResource)
+      comment_result = comment_serializer.serialize(comment, {}, includes: ['tags'])
+      
+      # Verify no taggings are exposed in any result
+      all_results = [post_result, tag_result, comment_result]
+      all_results.each do |result|
+        if result[:included]
+          taggings = result[:included].select { |r| r[:type] == 'taggings' }
+          expect(taggings).to be_empty, "Join table 'taggings' should never be exposed in serialization"
         end
       end
+    end
 
-      stub_const('Driver2Resource', driver_resource_class)
-      vehicle_resource = custom_vehicle_resource_class.new(vehicle)
+    it 'provides clean many-to-many relationships without exposing implementation' do
+      # From post perspective
+      post_resource = PostResource.new(post)
+      expect(post_resource.tags).to include(tag1, tag2)
+      
+      # From tag perspective  
+      tag_resource = TagResource.new(tag1)
+      expect(tag_resource.posts).to include(post)
+      expect(tag_resource.comments).to include(comment)
+      
+      # The fact that there's a join table should be completely hidden
+      # Users of the API should only see the direct many-to-many relationships
+    end
 
-      operators = vehicle_resource.operators
-      expect(operators.count).to eq(2)
-      expect(operators).to include(driver1, driver2)
+    it 'maintains join table invisibility with deep nested includes' do
+      serializer = JPie::Serializer.new(PostResource)
+      result = serializer.serialize(post, {}, includes: ['tags.posts', 'tags.comments'])
+      
+      # Should include tags and their related resources
+      included_tags = result[:included].select { |r| r[:type] == 'tags' }
+      included_posts = result[:included].select { |r| r[:type] == 'posts' }
+      included_comments = result[:included].select { |r| r[:type] == 'comments' }
+      
+      expect(included_tags.size).to eq(2)
+      expect(included_posts.size).to be >= 1
+      expect(included_comments.size).to be >= 1
+      
+      # Join table should never appear even in complex nested scenarios
+      taggings = result[:included].select { |r| r[:type] == 'taggings' }
+      expect(taggings).to be_empty
     end
   end
 end

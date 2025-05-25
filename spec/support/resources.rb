@@ -18,7 +18,6 @@ class PostResource < JPie::Resource
   has_one :user
   has_many :comments
   has_many :tags
-  # NOTE: No has_many :taggings - join table is hidden
 end
 
 class CommentResource < JPie::Resource
@@ -33,7 +32,6 @@ class CommentResource < JPie::Resource
   has_many :likes
   has_many :replies, resource: 'CommentResource'
   has_many :tags
-  # NOTE: No has_many :taggings - join table is hidden
 end
 
 class LikeResource < JPie::Resource
@@ -48,22 +46,12 @@ class TagResource < JPie::Resource
 
   attributes :name
   meta_attributes :created_at, :updated_at
-
-  # Provide semantic names instead of exposing the join table
-  has_many :tagged_posts, attr: :posts, resource: 'PostResource'
-  has_many :tagged_comments, attr: :comments, resource: 'CommentResource'
-
-  # Alternative: if you want to use the same names as ActiveRecord
   has_many :posts
   has_many :comments
 
-  # NOTE: No has_many :taggings - join table is hidden
-end
-
-class TaggingResource < JPie::Resource
-  meta_attributes :created_at, :updated_at
-  has_one :tag
-  has_one :taggable
+  # Custom relationship names
+  has_many :tagged_posts, attr: :posts, resource: 'PostResource'
+  has_many :tagged_comments, attr: :comments, resource: 'CommentResource'
 end
 
 # STI Resource classes for testing
