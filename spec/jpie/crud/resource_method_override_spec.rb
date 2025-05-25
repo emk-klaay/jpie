@@ -3,7 +3,7 @@
 require 'spec_helper'
 
 RSpec.describe 'Resource Method Override Support' do
-  let(:user) { User.create!(name: 'John Doe', email: 'john@example.com') }
+  let(:user) { User.create!(name: 'John Doe', email: 'john@example.com', created_at: Time.current) }
 
   describe 'Custom attribute methods' do
     context 'when custom method is defined before attribute declaration' do
@@ -137,7 +137,7 @@ RSpec.describe 'Resource Method Override Support' do
             {
               name_length: object.name.length,
               email_domain: object.email.split('@').last,
-              created_today: object.created_at.to_date == Date.current
+              created_today: object.created_at.to_date == Time.current.utc.to_date
             }
           end
 
