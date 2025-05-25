@@ -104,13 +104,8 @@ module JPie
 
       # Handle through associations by calling the appropriate association method
       def handle_through_association(name, options)
-        if options[:attr]
-          # Custom attribute name was provided - use it
-          @object.public_send(options[:attr])
-        else
-          # Use the relationship name directly - Rails will handle the through association
-          @object.public_send(name)
-        end
+        attr_name = options[:attr] || name
+        @object.public_send(attr_name)
       end
     end
   end

@@ -28,26 +28,34 @@ module JPie
 
       # Validate basic JSON:API request structure
       def validate_json_api_structure
-        request_body = request.body.read
-        request.body.rewind # Reset for later reading
-
+        request_body = read_request_body
         return if request_body.blank?
 
-        begin
-          parsed_body = JSON.parse(request_body)
-        rescue JSON::ParserError => e
-          raise JPie::Errors::InvalidJsonApiRequestError.new(
-            detail: "Invalid JSON: #{e.message}"
-          )
-        end
-
-        unless parsed_body.is_a?(Hash) && parsed_body.key?('data')
-          raise JPie::Errors::InvalidJsonApiRequestError.new(
-            detail: 'JSON:API request must have a top-level "data" member'
-          )
-        end
-
+        parsed_body = parse_json_body(request_body)
+        validate_top_level_structure(parsed_body)
         validate_data_structure(parsed_body['data'])
+      end
+
+      def read_request_body
+        request_body = request.body.read
+        request.body.rewind # Reset for later reading
+        request_body
+      end
+
+      def parse_json_body(request_body)
+        JSON.parse(request_body)
+      rescue JSON::ParserError => e
+        raise JPie::Errors::InvalidJsonApiRequestError.new(
+          detail: "Invalid JSON: #{e.message}"
+        )
+      end
+
+      def validate_top_level_structure(parsed_body)
+        return if parsed_body.is_a?(Hash) && parsed_body.key?('data')
+
+        raise JPie::Errors::InvalidJsonApiRequestError.new(
+          detail: 'JSON:API request must have a top-level "data" member'
+        )
       end
 
       # Validate the structure of the data member
@@ -102,28 +110,41 @@ module JPie
 
       # Validate a single include path
       def validate_include_path(include_path, supported_includes)
-        # Handle nested includes (e.g., "posts.comments")
         path_parts = include_path.split('.')
         current_level = supported_includes
 
         path_parts.each_with_index do |part, index|
-          unless current_level.include?(part.to_sym) || current_level.include?(part)
-            current_path = path_parts[0..index].join('.')
-            available_at_level = current_level.is_a?(Hash) ? current_level.keys : current_level
-
-            raise JPie::Errors::UnsupportedIncludeError.new(
-              include_path: current_path,
-              supported_includes: available_at_level.map(&:to_s)
-            )
-          end
-
-          # Move to next level for nested validation
-          if current_level.is_a?(Hash) && current_level[part.to_sym].is_a?(Hash)
-            current_level = current_level[part.to_sym]
-          elsif current_level.is_a?(Hash) && current_level[part].is_a?(Hash)
-            current_level = current_level[part]
-          end
+          validate_include_part(part, current_level, path_parts, index)
+          current_level = move_to_next_include_level(part, current_level)
         end
+      end
+
+      def validate_include_part(part, current_level, path_parts, index)
+        return if include_part_supported?(part, current_level)
+
+        current_path = path_parts[0..index].join('.')
+        available_at_level = extract_available_includes(current_level)
+
+        raise JPie::Errors::UnsupportedIncludeError.new(
+          include_path: current_path,
+          supported_includes: available_at_level.map(&:to_s)
+        )
+      end
+
+      def include_part_supported?(part, current_level)
+        current_level.include?(part.to_sym) || current_level.include?(part)
+      end
+
+      def extract_available_includes(current_level)
+        current_level.is_a?(Hash) ? current_level.keys : current_level
+      end
+
+      def move_to_next_include_level(part, current_level)
+        return current_level unless current_level.is_a?(Hash)
+
+        current_level[part.to_sym] if current_level[part.to_sym].is_a?(Hash)
+        current_level[part] if current_level[part].is_a?(Hash)
+        current_level
       end
 
       # Validate sort parameters against supported fields
@@ -148,7 +169,8 @@ module JPie
         # Validate field name format
         unless field_name.match?(/\A[a-zA-Z][a-zA-Z0-9_]*\z/)
           raise JPie::Errors::InvalidSortParameterError.new(
-            detail: "Invalid sort field format: '#{sort_field}'. Field names must start with a letter and contain only letters, numbers, and underscores"
+            detail: "Invalid sort field format: '#{sort_field}'. " \
+                    'Field names must start with a letter and contain only letters, numbers, and underscores'
           )
         end
 

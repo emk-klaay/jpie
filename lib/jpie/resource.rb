@@ -51,17 +51,31 @@ module JPie
       # Return supported sort fields for validation
       # Override this method to customize supported sort fields
       def supported_sort_fields
-        # Return all attributes and sortable fields as supported sort fields by default
-        fields = (_attributes + _sortable_fields.keys).uniq.map(&:to_s)
+        base_fields = extract_base_sort_fields
+        timestamp_fields = extract_timestamp_fields
+        (base_fields + timestamp_fields).uniq
+      end
 
-        # Add common model timestamp fields if the model supports them
-        if model.respond_to?(:column_names)
-          fields << 'created_at' if model.column_names.include?('created_at') && fields.exclude?('created_at')
+      private
 
-          fields << 'updated_at' if model.column_names.include?('updated_at') && fields.exclude?('updated_at')
-        end
+      def extract_base_sort_fields
+        (_attributes + _sortable_fields.keys).uniq.map(&:to_s)
+      end
 
-        fields
+      def extract_timestamp_fields
+        return [] unless model.respond_to?(:column_names)
+
+        timestamp_fields = []
+        add_timestamp_field(timestamp_fields, 'created_at')
+        add_timestamp_field(timestamp_fields, 'updated_at')
+        timestamp_fields
+      end
+
+      def add_timestamp_field(fields, field_name)
+        return unless model.column_names.include?(field_name)
+        return if fields.include?(field_name)
+
+        fields << field_name
       end
     end
 
