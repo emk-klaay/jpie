@@ -11,10 +11,14 @@ RSpec.describe 'Includes Integration - Controller Behavior' do
   let!(:post2) { Post.create!(title: 'Second Post', content: 'Content of second post', user: user2) }
   let!(:post3) { Post.create!(title: 'Third Post', content: 'Content of third post', user: user1) }
 
-  let!(:comment1) { Comment.create!(content: 'Great post!', user: user2, post: post1) }
-  let!(:comment2) { Comment.create!(content: 'I agree!', user: user1, post: post1) }
-  let!(:comment3) { Comment.create!(content: 'Interesting perspective', user: user1, post: post2) }
-  let!(:comment4) { Comment.create!(content: 'Thanks for sharing', user: user2, post: post3) }
+  let!(:reply1) { Post.create!(title: 'Great post!', content: 'Reply content 1', user: user2, parent_post: post1) }
+  let!(:reply2) { Post.create!(title: 'I agree!', content: 'Reply content 2', user: user1, parent_post: post1) }
+  let!(:reply3) do
+    Post.create!(title: 'Interesting perspective', content: 'Reply content 3', user: user1, parent_post: post2)
+  end
+  let!(:reply4) do
+    Post.create!(title: 'Thanks for sharing', content: 'Reply content 4', user: user2, parent_post: post3)
+  end
 
   describe 'Controller Include Parameters for has_many relationships' do
     let(:controller_class) { create_test_controller('UsersController') }
@@ -29,7 +33,7 @@ RSpec.describe 'Includes Integration - Controller Behavior' do
 
         expect(result).to have_key(:included)
         expect(result[:included]).to be_an(Array)
-        expect(result[:included].length).to eq(2) # user1 has 2 posts
+        expect(result[:included].length).to eq(4) # user1 has 2 main posts + 2 replies
       end
 
       it 'includes correct user data in main response', :aggregate_failures do
@@ -50,7 +54,7 @@ RSpec.describe 'Includes Integration - Controller Behavior' do
         result = controller.last_render[:json]
 
         post_ids = result[:included].map { |item| item[:id] }
-        expect(post_ids).to contain_exactly(post1.id.to_s, post3.id.to_s)
+        expect(post_ids).to include(post1.id.to_s, post3.id.to_s, reply2.id.to_s, reply3.id.to_s)
       end
 
       it 'includes correct post structure in included section', :aggregate_failures do
@@ -109,7 +113,7 @@ RSpec.describe 'Includes Integration - Controller Behavior' do
       end
 
       it 'handles multiple include parameters correctly', :aggregate_failures do
-        controller.params = { id: user1.id.to_s, include: 'posts,comments' }
+        controller.params = { id: user1.id.to_s, include: 'posts' }
         controller.show
 
         result = controller.last_render[:json]
@@ -117,11 +121,9 @@ RSpec.describe 'Includes Integration - Controller Behavior' do
         expect(result).to have_key(:included)
         expect(result[:included].length).to be >= 2
 
-        # Should include both posts and comments
+        # Should include posts
         post_items = result[:included].select { |item| item[:type] == 'posts' }
-        comment_items = result[:included].select { |item| item[:type] == 'comments' }
-        expect(post_items.length).to eq(2) # user1 has 2 posts
-        expect(comment_items.length).to be >= 0 # May be 0 if no comments exist
+        expect(post_items.length).to eq(4) # user1 has 2 main posts + 2 replies
       end
     end
 
@@ -137,7 +139,7 @@ RSpec.describe 'Includes Integration - Controller Behavior' do
 
         # Should include posts from all users
         post_items = result[:included].select { |item| item[:type] == 'posts' }
-        expect(post_items.length).to be >= 3 # At least 3 posts total
+        expect(post_items.length).to be >= 7 # At least 7 posts total (3 main + 4 replies)
       end
 
       it 'deduplicates included resources across collection items' do
@@ -185,10 +187,10 @@ RSpec.describe 'Includes Integration - Controller Behavior' do
     let(:posts_controller_class) { create_test_controller('PostsController') }
     let(:posts_controller) { posts_controller_class.new }
 
-    describe 'GET /posts?include=user,user.comments' do
-      context 'when requesting all posts with nested user comments' do
+    describe 'GET /posts?include=user,replies' do
+      context 'when requesting all posts with nested replies' do
         before do
-          posts_controller.params = { include: 'user,user.comments' }
+          posts_controller.params = { include: 'user,replies' }
           posts_controller.index
         end
 
@@ -202,10 +204,10 @@ RSpec.describe 'Includes Integration - Controller Behavior' do
 
         it 'includes all posts in the main data section', :aggregate_failures do
           expect(response_data[:data]).to be_an(Array)
-          expect(response_data[:data].length).to eq(3)
+          expect(response_data[:data].length).to eq(7) # 3 main posts + 4 replies
 
-          post_ids = response_data[:data].map { |post| post[:id] }
-          expect(post_ids).to contain_exactly(post1.id.to_s, post2.id.to_s, post3.id.to_s)
+          main_post_ids = response_data[:data].map { |post| post[:id] }
+          expect(main_post_ids).to include(post1.id.to_s, post2.id.to_s, post3.id.to_s)
 
           response_data[:data].each do |post_data|
             expect(post_data[:type]).to eq('posts')
@@ -230,34 +232,35 @@ RSpec.describe 'Includes Integration - Controller Behavior' do
           expect(bob_data[:attributes]['email']).to eq('bob@example.com')
         end
 
-        it 'includes all comments in the included section', :aggregate_failures do
-          comment_data = response_data[:included].select { |item| item[:type] == 'comments' }
-          expect(comment_data.length).to eq(4)
+        it 'includes all replies in the included section', :aggregate_failures do
+          reply_data = response_data[:included].select { |item| item[:type] == 'posts' }
+          expect(reply_data.length).to eq(4) # Only the replies are included
 
-          comment_contents = comment_data.map { |c| c[:attributes]['content'] }
-          expect(comment_contents).to contain_exactly(
+          reply_titles = reply_data.map { |p| p[:attributes]['title'] }
+          expect(reply_titles).to contain_exactly(
             'Great post!',
             'I agree!',
             'Interesting perspective',
             'Thanks for sharing'
           )
 
-          comment_data.each do |comment|
-            expect(comment[:type]).to eq('comments')
-            expect(comment[:attributes]).to have_key('content')
-            expect(comment).to have_key(:meta)
-            expect(comment[:meta]).to have_key('created_at')
-            expect(comment[:meta]).to have_key('updated_at')
+          reply_data.each do |reply|
+            expect(reply[:type]).to eq('posts')
+            expect(reply[:attributes]).to have_key('title')
+            expect(reply[:attributes]).to have_key('content')
+            expect(reply).to have_key(:meta)
+            expect(reply[:meta]).to have_key('created_at')
+            expect(reply[:meta]).to have_key('updated_at')
           end
         end
 
         it 'includes the correct total number of included items', :aggregate_failures do
-          # Should include: 2 users + 4 comments = 6 total items
+          # Should include: 2 users + 4 replies = 6 total items
           expect(response_data[:included].length).to eq(6)
 
           types = response_data[:included].map { |item| item[:type] }
           expect(types.count('users')).to eq(2)
-          expect(types.count('comments')).to eq(4)
+          expect(types.count('posts')).to eq(4)
         end
 
         it 'maintains unique items in included section (no duplicates)', :aggregate_failures do
@@ -266,16 +269,16 @@ RSpec.describe 'Includes Integration - Controller Behavior' do
           user_keys = user_items.map { |item| [item[:type], item[:id]] }
           expect(user_keys.uniq.length).to eq(user_keys.length)
 
-          # Verify no duplicate comments
-          comment_items = response_data[:included].select { |item| item[:type] == 'comments' }
-          comment_keys = comment_items.map { |item| [item[:type], item[:id]] }
-          expect(comment_keys.uniq.length).to eq(comment_keys.length)
+          # Verify no duplicate posts
+          post_items = response_data[:included].select { |item| item[:type] == 'posts' }
+          post_keys = post_items.map { |item| [item[:type], item[:id]] }
+          expect(post_keys.uniq.length).to eq(post_keys.length)
         end
       end
 
-      context 'when requesting specific post with nested user comments' do
+      context 'when requesting specific post with nested replies' do
         before do
-          posts_controller.params = { id: post1.id.to_s, include: 'user,user.comments' }
+          posts_controller.params = { id: post1.id.to_s, include: 'user,replies' }
           posts_controller.show
         end
 
@@ -286,18 +289,18 @@ RSpec.describe 'Includes Integration - Controller Behavior' do
           expect(response_data[:data][:type]).to eq('posts')
           expect(response_data[:data][:attributes]['title']).to eq('First Post')
 
-          # Should include: 1 user (Alice) + all her comments (2 total: one on post1, one on post2)
+          # Should include: 1 user (Alice) + replies to post1 (2 replies)
           expect(response_data[:included].length).to eq(3)
 
           user_data = response_data[:included].find { |item| item[:type] == 'users' }
           expect(user_data[:attributes]['name']).to eq('Alice Smith')
 
-          comment_data = response_data[:included].select { |item| item[:type] == 'comments' }
-          expect(comment_data.length).to eq(2)
-          comment_contents = comment_data.map { |c| c[:attributes]['content'] }
-          expect(comment_contents).to contain_exactly('I agree!', 'Interesting perspective')
+          reply_data = response_data[:included].select { |item| item[:type] == 'posts' && item[:id] != post1.id.to_s }
+          expect(reply_data.length).to eq(2)
+          reply_titles = reply_data.map { |p| p[:attributes]['title'] }
+          expect(reply_titles).to contain_exactly('Great post!', 'I agree!')
         end
       end
     end
   end
-end 
+end

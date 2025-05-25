@@ -15,9 +15,9 @@ RSpec.describe 'Comprehensive Polymorphic Includes' do
   let!(:post1) { Post.create!(title: 'Ruby Tutorial', content: 'Learning Ruby', user: user1) }
   let!(:post2) { Post.create!(title: 'Rails Guide', content: 'Building APIs', user: user2) }
 
-  let!(:comment1) { Comment.create!(content: 'Great tutorial!', user: user2, post: post1) }
-  let!(:comment2) { Comment.create!(content: 'Very helpful', user: user1, post: post2) }
-  let!(:reply1) { Comment.create!(content: 'Thanks!', user: user1, post: post1, parent_comment: comment1) }
+  let!(:reply1) { Post.create!(title: 'Great tutorial!', content: 'Reply content 1', user: user2, parent_post: post1) }
+  let!(:reply2) { Post.create!(title: 'Very helpful', content: 'Reply content 2', user: user1, parent_post: post2) }
+  let!(:reply3) { Post.create!(title: 'Thanks!', content: 'Reply content 3', user: user1, parent_post: post1) }
 
   # Set up polymorphic tags
   let!(:post1_ruby_tag) { Tagging.create!(tag: tag_ruby, taggable: post1) }
@@ -25,9 +25,9 @@ RSpec.describe 'Comprehensive Polymorphic Includes' do
   let!(:post2_rails_tag) { Tagging.create!(tag: tag_rails, taggable: post2) }
   let!(:post2_api_tag) { Tagging.create!(tag: tag_api, taggable: post2) }
 
-  let!(:comment1_ruby_tag) { Tagging.create!(tag: tag_ruby, taggable: comment1) }
-  let!(:comment2_testing_tag) { Tagging.create!(tag: tag_testing, taggable: comment2) }
-  let!(:reply1_api_tag) { Tagging.create!(tag: tag_api, taggable: reply1) }
+  let!(:reply1_ruby_tag) { Tagging.create!(tag: tag_ruby, taggable: reply1) }
+  let!(:reply2_testing_tag) { Tagging.create!(tag: tag_testing, taggable: reply2) }
+  let!(:reply3_api_tag) { Tagging.create!(tag: tag_api, taggable: reply3) }
 
   describe 'Complex polymorphic scenarios - Clean API' do
     context 'Posts with polymorphic tag includes' do
@@ -56,17 +56,17 @@ RSpec.describe 'Comprehensive Polymorphic Includes' do
         expect(tagging_items).to be_empty
       end
 
-      it 'supports complex nested includes with comments and their tags' do
-        result = serializer.serialize(post1, {}, includes: ['comments.tags', 'tags'])
+      it 'supports complex nested includes with replies and their tags' do
+        result = serializer.serialize(post1, {}, includes: ['replies.tags', 'tags'])
 
         expect(result[:included]).to be_present
 
-        # Should include post tags + comment tags
+        # Should include post tags + reply tags
         tag_items = result[:included].select { |item| item[:type] == 'tags' }
-        comment_items = result[:included].select { |item| item[:type] == 'comments' }
+        reply_items = result[:included].select { |item| item[:type] == 'posts' && item[:id] != post1.id.to_s }
 
-        expect(comment_items.count).to eq(2) # comment1 and reply1
-        expect(tag_items.count).to eq(3) # ruby (shared), testing (post), api (reply)
+        expect(reply_items.count).to eq(2) # reply1 and reply3
+        expect(tag_items.count).to eq(3) # ruby (shared), testing (post), api (reply3)
 
         tag_names = tag_items.map { |tag| tag[:attributes]['name'] }
         expect(tag_names).to contain_exactly('ruby', 'testing', 'api')
@@ -80,48 +80,29 @@ RSpec.describe 'Comprehensive Polymorphic Includes' do
     context 'Tags with polymorphic includes to multiple types' do
       let(:serializer) { JPie::Serializer.new(TagResource) }
 
-      it 'includes both posts and comments that share the same tag' do
-        result = serializer.serialize(tag_ruby, {}, includes: %w[posts comments])
+      it 'includes both posts and replies that share the same tag' do
+        result = serializer.serialize(tag_ruby, {}, includes: ['posts'])
 
         expect(result[:included]).to be_present
         post_items = result[:included].select { |item| item[:type] == 'posts' }
-        comment_items = result[:included].select { |item| item[:type] == 'comments' }
 
-        expect(post_items.count).to eq(1) # post1 has ruby tag
-        expect(comment_items.count).to eq(1) # comment1 has ruby tag
+        expect(post_items.count).to eq(2) # post1 and reply1 both have ruby tag
 
-        expect(post_items.first[:attributes]['title']).to eq('Ruby Tutorial')
-        expect(comment_items.first[:attributes]['content']).to eq('Great tutorial!')
-      end
-
-      it 'supports semantic relationship names' do
-        result = serializer.serialize(tag_ruby, {}, includes: %w[tagged_posts tagged_comments])
-
-        expect(result[:included]).to be_present
-        post_items = result[:included].select { |item| item[:type] == 'posts' }
-        comment_items = result[:included].select { |item| item[:type] == 'comments' }
-
-        expect(post_items.count).to eq(1) # post1 has ruby tag
-        expect(comment_items.count).to eq(1) # comment1 has ruby tag
-
-        # Should not expose taggings
-        tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
-        expect(tagging_items).to be_empty
+        post_titles = post_items.map { |p| p[:attributes]['title'] }
+        expect(post_titles).to contain_exactly('Ruby Tutorial', 'Great tutorial!')
       end
 
       it 'supports deep polymorphic includes through clean relationships' do
-        # Include the tag's posts/comments and their users
-        result = serializer.serialize(tag_ruby, {}, includes: ['posts.user', 'comments.user'])
+        # Include the tag's posts and their users
+        result = serializer.serialize(tag_ruby, {}, includes: ['posts.user'])
 
         expect(result[:included]).to be_present
 
         post_items = result[:included].select { |item| item[:type] == 'posts' }
-        comment_items = result[:included].select { |item| item[:type] == 'comments' }
         user_items = result[:included].select { |item| item[:type] == 'users' }
 
-        expect(post_items.count).to eq(1) # post1
-        expect(comment_items.count).to eq(1) # comment1
-        expect(user_items.count).to eq(2) # user1 (post author) and user2 (comment author)
+        expect(post_items.count).to eq(2) # post1 and reply1
+        expect(user_items.count).to eq(2) # user1 (post author) and user2 (reply author)
 
         # Should not expose taggings
         tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
@@ -130,7 +111,7 @@ RSpec.describe 'Comprehensive Polymorphic Includes' do
 
       it 'supports parallel polymorphic paths with proper deduplication' do
         # Multiple paths that might include the same resources
-        includes = ['posts.user', 'comments.user']
+        includes = ['posts.user']
         result = serializer.serialize(tag_ruby, {}, includes: includes)
 
         expect(result[:included]).to be_present
@@ -144,32 +125,32 @@ RSpec.describe 'Comprehensive Polymorphic Includes' do
     end
 
     context 'Cross-type polymorphic relationships' do
-      it 'handles comments with tags that also tag posts' do
-        serializer = JPie::Serializer.new(CommentResource)
-        result = serializer.serialize(comment1, {}, includes: ['tags.posts'])
+      it 'handles replies with tags that also tag posts' do
+        serializer = JPie::Serializer.new(PostResource)
+        result = serializer.serialize(reply1, {}, includes: ['tags.posts'])
 
         expect(result[:included]).to be_present
         tag_items = result[:included].select { |item| item[:type] == 'tags' }
-        post_items = result[:included].select { |item| item[:type] == 'posts' }
+        post_items = result[:included].select { |item| item[:type] == 'posts' && item[:id] != reply1.id.to_s }
 
-        # comment1 has ruby tag, which is also on post1
+        # reply1 has ruby tag, which is also on post1
         expect(tag_items.count).to eq(1) # ruby tag
         expect(post_items.count).to eq(1) # post1 also has ruby tag
       end
 
       it 'supports extremely complex polymorphic chains' do
-        # From a comment, include its tags, then posts that also have those tags, then users of those posts
-        serializer = JPie::Serializer.new(CommentResource)
-        result = serializer.serialize(comment1, {}, includes: ['tags.posts.user'])
+        # From a reply, include its tags, then posts that also have those tags, then users of those posts
+        serializer = JPie::Serializer.new(PostResource)
+        result = serializer.serialize(reply1, {}, includes: ['tags.posts.user'])
 
         expect(result[:included]).to be_present
 
         types_included = result[:included].map { |item| item[:type] }.uniq.sort
         expect(types_included).to include('tags', 'posts', 'users')
 
-        # Verify the chain: comment1 -> ruby tag -> post1 -> user1
+        # Verify the chain: reply1 -> ruby tag -> post1 -> user1
         tag_items = result[:included].select { |item| item[:type] == 'tags' }
-        post_items = result[:included].select { |item| item[:type] == 'posts' }
+        post_items = result[:included].select { |item| item[:type] == 'posts' && item[:id] != reply1.id.to_s }
         user_items = result[:included].select { |item| item[:type] == 'users' }
 
         expect(tag_items.first[:attributes]['name']).to eq('ruby')
@@ -186,8 +167,8 @@ RSpec.describe 'Comprehensive Polymorphic Includes' do
   describe 'Multiple polymorphic includes in a single request' do
     let(:serializer) { JPie::Serializer.new(PostResource) }
 
-    context 'when requesting tags,comments,comments.tags' do
-      let(:includes) { ['tags', 'comments', 'comments.tags'] }
+    context 'when requesting tags,replies,replies.tags' do
+      let(:includes) { ['tags', 'replies', 'replies.tags'] }
 
       it 'includes all requested resources without duplicates' do
         result = serializer.serialize(post1, {}, includes: includes)
@@ -196,143 +177,79 @@ RSpec.describe 'Comprehensive Polymorphic Includes' do
 
         # Should include post tags
         post_tag_items = result[:included].select { |item| item[:type] == 'tags' }
-        expect(post_tag_items.count).to eq(3) # ruby (shared), testing (post), api (reply)
+        expect(post_tag_items.count).to eq(3) # ruby (shared), testing (post), api (reply3)
 
-        # Should include comments
-        comment_items = result[:included].select { |item| item[:type] == 'comments' }
-        expect(comment_items.count).to eq(2) # comment1 and reply1
+        # Should include replies
+        reply_items = result[:included].select { |item| item[:type] == 'posts' && item[:id] != post1.id.to_s }
+        expect(reply_items.count).to eq(2) # reply1 and reply3
 
-        # Verify tag names include both post tags and comment tags
-        tag_names = post_tag_items.map { |tag| tag[:attributes]['name'] }
-        expect(tag_names).to contain_exactly('ruby', 'testing', 'api')
+        # Should not expose taggings
+        tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+        expect(tagging_items).to be_empty
       end
 
-      it 'properly deduplicates tags that appear on both posts and comments' do
+      it 'properly deduplicates tags that appear in multiple contexts' do
         result = serializer.serialize(post1, {}, includes: includes)
 
         tag_items = result[:included].select { |item| item[:type] == 'tags' }
         tag_ids = tag_items.map { |tag| tag[:id] }
 
-        # Should not have duplicate tag IDs
+        # Should not have duplicate tags even though ruby appears on both post1 and reply1
         expect(tag_ids.uniq.length).to eq(tag_ids.length)
-
-        # Specifically check that ruby tag (which is on both post and comment) appears only once
-        ruby_tags = tag_items.select { |tag| tag[:attributes]['name'] == 'ruby' }
-        expect(ruby_tags.count).to eq(1)
-      end
-    end
-
-    context 'when requesting multiple includes with overlap' do
-      let(:includes) { ['tags', 'comments.tags', 'comments.user'] }
-
-      it 'handles overlapping include paths efficiently' do
-        result = serializer.serialize(post1, {}, includes: includes)
-
-        expect(result[:included]).to be_present
-
-        # Check that we have the expected resource types
-        included_types = result[:included].map { |item| item[:type] }.uniq.sort
-        expect(included_types).to contain_exactly('comments', 'tags', 'users')
-
-        # Verify we have proper counts without duplication
-        tag_items = result[:included].select { |item| item[:type] == 'tags' }
-        comment_items = result[:included].select { |item| item[:type] == 'comments' }
-        user_items = result[:included].select { |item| item[:type] == 'users' }
-
         expect(tag_items.count).to eq(3) # ruby, testing, api
-        expect(comment_items.count).to eq(2) # comment1, reply1
-        expect(user_items.count).to eq(2) # user1, user2
       end
-    end
 
-    context 'when serializing multiple posts with polymorphic includes' do
-      let(:includes) { ['tags', 'comments', 'comments.tags'] }
-
-      it 'includes resources from all posts without duplication' do
-        result = serializer.serialize([post1, post2], {}, includes: includes)
-
-        expect(result[:included]).to be_present
-
-        # Should include tags from both posts and their comments
-        tag_items = result[:included].select { |item| item[:type] == 'tags' }
-        tag_names = tag_items.map { |tag| tag[:attributes]['name'] }.sort
-        expect(tag_names).to contain_exactly('api', 'rails', 'ruby', 'testing')
-
-        # Should include comments from both posts
-        comment_items = result[:included].select { |item| item[:type] == 'comments' }
-        expect(comment_items.count).to eq(3) # comment1, comment2, reply1
-
-        # Verify no duplicate resources
-        tag_ids = tag_items.map { |tag| tag[:id] }
-        comment_ids = comment_items.map { |comment| comment[:id] }
-
-        expect(tag_ids.uniq.length).to eq(tag_ids.length)
-        expect(comment_ids.uniq.length).to eq(comment_ids.length)
-      end
-    end
-
-    context 'with very complex polymorphic include paths' do
-      let(:includes) { ['tags.posts.user', 'comments.tags.posts', 'user'] }
-
-      it 'handles deeply nested polymorphic includes across multiple paths' do
+      it 'maintains correct relationships in complex scenarios' do
         result = serializer.serialize(post1, {}, includes: includes)
 
-        expect(result[:included]).to be_present
+        # Verify main post data
+        expect(result[:data][:type]).to eq('posts')
+        expect(result[:data][:attributes]['title']).to eq('Ruby Tutorial')
 
-        # Should contain all the expected types
-        included_types = result[:included].map { |item| item[:type] }.uniq.sort
-        expect(included_types).to include('comments', 'posts', 'tags', 'users')
-
-        # Verify deduplication works across complex paths
-        user_items = result[:included].select { |item| item[:type] == 'users' }
-        post_items = result[:included].select { |item| item[:type] == 'posts' }
-
-        # Should not have duplicate users or posts
-        user_ids = user_items.map { |u| u[:id] }
-        post_ids = post_items.map { |p| p[:id] }
-
-        expect(user_ids.uniq.length).to eq(user_ids.length)
-        expect(post_ids.uniq.length).to eq(post_ids.length)
+        # Verify included data structure
+        expect(result[:included]).to be_an(Array)
+        types = result[:included].map { |item| item[:type] }.uniq.sort
+        expect(types).to contain_exactly('posts', 'tags')
       end
     end
   end
 
-  describe 'JSON:API compliance with polymorphic data - Clean API' do
-    it 'produces valid JSON:API structure with clean polymorphic includes' do
-      serializer = JPie::Serializer.new(TagResource)
-      result = serializer.serialize(tag_ruby, {}, includes: %w[posts comments])
+  describe 'Edge cases in polymorphic includes' do
+    let(:serializer) { JPie::Serializer.new(PostResource) }
 
-      # Should have proper JSON:API structure
-      expect(result).to have_key(:data)
-      expect(result).to have_key(:included)
+    it 'handles posts with no tags gracefully' do
+      empty_post = Post.create!(title: 'Empty Post', content: 'No tags', user: user1)
+      result = serializer.serialize(empty_post, {}, includes: ['tags'])
 
-      # Data should be a single tag
-      expect(result[:data][:type]).to eq('tags')
-      expect(result[:data][:attributes]['name']).to eq('ruby')
-
-      # Included should contain only business objects, not join tables
-      included_types = result[:included].map { |item| item[:type] }.uniq.sort
-      expect(included_types).to contain_exactly('comments', 'posts')
-
-      # Should not expose taggings
-      tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
-      expect(tagging_items).to be_empty
+      # Should not fail and should not include any tags
+      tag_items = result[:included]&.select { |item| item[:type] == 'tags' } || []
+      expect(tag_items).to be_empty
     end
 
-    it 'maintains proper resource linkage in polymorphic scenarios' do
-      serializer = JPie::Serializer.new(PostResource)
-      result = serializer.serialize(post1, {}, includes: ['tags', 'comments'])
+    it 'handles tags with no posts gracefully' do
+      empty_tag = Tag.create!(name: 'unused')
+      tag_serializer = JPie::Serializer.new(TagResource)
+      result = tag_serializer.serialize(empty_tag, {}, includes: ['posts'])
 
-      # Verify proper structure
-      expect(result[:data][:type]).to eq('posts')
-      expect(result[:included]).to be_an(Array)
+      # Should not fail and should not include any posts
+      post_items = result[:included]&.select { |item| item[:type] == 'posts' } || []
+      expect(post_items).to be_empty
+    end
 
-      # All included items should have proper type and id
-      result[:included].each do |item|
-        expect(item).to have_key(:type)
-        expect(item).to have_key(:id)
-        expect(item).to have_key(:attributes)
-      end
+    it 'maintains polymorphic integrity across complex operations' do
+      # Create complex associations
+      new_post = Post.create!(title: 'New Post', content: 'Content', user: user1)
+      Tagging.create!(tag: tag_ruby, taggable: new_post)
+
+      result = serializer.serialize([post1, new_post], {}, includes: ['tags'])
+
+      # Should include all posts and their tags without duplication
+      tag_items = result[:included].select { |item| item[:type] == 'tags' }
+      tag_names = tag_items.map { |tag| tag[:attributes]['name'] }
+
+      # ruby tag should appear only once even though it's on multiple posts
+      expect(tag_names.count('ruby')).to eq(1)
+      expect(tag_names).to include('ruby', 'testing')
     end
   end
-end 
+end

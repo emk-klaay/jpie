@@ -173,7 +173,7 @@ RSpec.describe JPie::Controller do
             end
 
             def test_invalid_record
-              raise ActiveRecord::RecordInvalid.new
+              raise ActiveRecord::RecordInvalid
             end
           end
         end
@@ -243,7 +243,7 @@ RSpec.describe JPie::Controller do
 
       it 'applies scoping in index action' do
         user = User.create!(name: 'Scoped User', email: 'scoped@example.com')
-        
+
         # Add current_user method to the controller
         scoped_controller.define_singleton_method(:current_user) { user }
 

@@ -55,8 +55,8 @@ RSpec.describe 'JPie Automatic CRUD Handling' do
           }
         }
 
-        controller.request.set_body(invalid_params.to_json)
-        controller.request.set_method('POST')
+        controller.request.body = invalid_params.to_json
+        controller.request.method = 'POST'
         controller.request.content_type = 'application/vnd.api+json'
 
         expect { controller.create }.to raise_error(ActiveRecord::RecordInvalid)

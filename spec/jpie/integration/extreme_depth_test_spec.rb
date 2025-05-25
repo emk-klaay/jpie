@@ -5,15 +5,21 @@ require 'spec_helper'
 RSpec.describe 'Extreme Deep Nesting Test' do
   let!(:user) { User.create!(name: 'Test User', email: 'test@example.com') }
   let!(:post) { Post.create!(title: 'Test Post', content: 'Content', user: user) }
-  let!(:comment) { Comment.create!(content: 'Test comment', user: user, post: post) }
-  let!(:like) { Like.create!(user: user, comment: comment) }
+  let!(:reply_post) { Post.create!(title: 'Reply Post', content: 'Reply content', user: user, parent_post: post) }
+  let!(:tag) { Tag.create!(name: 'ruby') }
+
+  before do
+    # Set up associations for deep nesting tests
+    post.tags << tag
+    reply_post.tags << tag
+  end
 
   describe 'arbitrarily deep nested includes' do
     let(:serializer) { JPie::Serializer.new(PostResource) }
 
-    it 'supports the requested format: user,user.comments,user.comments.likes,user.comments.comments' do
-      # This is the exact format the user requested
-      includes = ['user', 'user.comments', 'user.comments.likes', 'user.comments.comments']
+    it 'supports the requested format: user,user.posts,user.posts.tags,user.posts.replies' do
+      # This is adapted from the original format using our simplified models
+      includes = ['user', 'user.posts', 'user.posts.tags', 'user.posts.replies']
 
       expect do
         result = serializer.serialize(post, {}, includes: includes)
@@ -22,14 +28,14 @@ RSpec.describe 'Extreme Deep Nesting Test' do
         # Should include different types of resources
         types = result[:included].map { |item| item[:type] }.uniq
         expect(types).to include('users')
-        expect(types).to include('comments') if user.comments.any?
-        expect(types).to include('likes') if user.comments.any? && user.comments.any? { |c| c.likes.any? }
+        expect(types).to include('posts') if user.posts.any?
+        expect(types).to include('tags') if user.posts.any? && user.posts.any? { |p| p.tags.any? }
       end.not_to raise_error
     end
 
     it 'supports very deep theoretical nesting' do
-      # Test a theoretical very deep chain
-      includes = ['user.comments.likes.user.comments.likes.user']
+      # Test a theoretical very deep chain using our available relationships
+      includes = ['user.posts.tags.posts.user.posts.tags']
 
       expect do
         result = serializer.serialize(post, {}, includes: includes)
@@ -40,15 +46,15 @@ RSpec.describe 'Extreme Deep Nesting Test' do
     end
 
     it 'handles complex parallel chains as mentioned in the request' do
-      # Multiple parallel deep chains
+      # Multiple parallel deep chains using our simplified models
       includes = [
         'user',
-        'user.comments',
-        'user.comments.likes',
-        'user.comments.comments', # This would be replies (comments on comments)
-        'comments.user',
-        'comments.likes',
-        'comments.likes.user'
+        'user.posts',
+        'user.posts.tags',
+        'user.posts.replies', # Self-referencing posts (replies)
+        'replies.user',
+        'replies.tags',
+        'replies.tags.posts'
       ]
 
       expect do
