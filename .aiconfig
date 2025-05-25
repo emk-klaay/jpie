@@ -66,5 +66,10 @@
 
 # Examples
 - The examples must _only_ include _required_ code
+- The examples must not include any unrelated or supurflous code
 - Examples must be a single markdown file
-- Examples must use the `http` code blocks for exampels
+- Examples must use the `http` code blocks for its exampels
+- Examples must only include the minium number of examples
+- Examples must never include migrations.
+- Examples must not include a features section or similar
+- Examples must include an introduction to the example
