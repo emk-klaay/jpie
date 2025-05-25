@@ -16,7 +16,6 @@ end
 ```ruby
 class UserResource < JPie::Resource
   attributes :name, :email
-  meta_attributes :created_at, :updated_at
 end
 ```
 
@@ -24,7 +23,6 @@ end
 ```ruby
 class UsersController < ApplicationController
   include JPie::Controller
-  resource UserResource
 end
 ```
 
@@ -62,10 +60,6 @@ Content-Type: application/vnd.api+json
     "attributes": {
       "name": "John Doe",
       "email": "john@example.com"
-    },
-    "meta": {
-      "created_at": "2024-01-15T10:30:00Z",
-      "updated_at": "2024-01-15T10:30:00Z"
     }
   }
 }
@@ -87,10 +81,6 @@ Content-Type: application/vnd.api+json
       "attributes": {
         "name": "John Doe",
         "email": "john@example.com"
-      },
-      "meta": {
-        "created_at": "2024-01-15T10:30:00Z",
-        "updated_at": "2024-01-15T10:30:00Z"
       }
     }
   ]
@@ -112,10 +102,6 @@ Content-Type: application/vnd.api+json
     "attributes": {
       "name": "John Doe",
       "email": "john@example.com"
-    },
-    "meta": {
-      "created_at": "2024-01-15T10:30:00Z",
-      "updated_at": "2024-01-15T10:30:00Z"
     }
   }
 }
@@ -146,10 +132,6 @@ Content-Type: application/vnd.api+json
     "attributes": {
       "name": "Jane Doe",
       "email": "john@example.com"
-    },
-    "meta": {
-      "created_at": "2024-01-15T10:30:00Z",
-      "updated_at": "2024-01-15T12:00:00Z"
     }
   }
 }
