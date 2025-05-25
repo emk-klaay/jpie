@@ -120,7 +120,114 @@ class ArticleResource < JPie::Resource
 end
 ```
 
-## HTTP Example
+## HTTP Examples
+
+### Create Article
+```http
+POST /articles
+Content-Type: application/vnd.api+json
+Authorization: Bearer user_token
+
+{
+  "data": {
+    "type": "articles",
+    "attributes": {
+      "title": "Meta Field Configuration Guide",
+      "content": "This guide demonstrates all the different ways to configure meta fields in JPie...",
+      "status": "draft"
+    }
+  }
+}
+
+HTTP/1.1 201 Created
+Content-Type: application/vnd.api+json
+
+{
+  "data": {
+    "id": "1",
+    "type": "articles",
+    "attributes": {
+      "title": "Meta Field Configuration Guide",
+      "content": "This guide demonstrates all the different ways to configure meta fields in JPie...",
+      "status": "draft"
+    },
+    "meta": {
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:00Z",
+      "published_at": null,
+      "author_id": 123,
+      "view_count": 0,
+      "reading_time": {
+        "minutes": 3,
+        "formatted": "3 min read"
+      },
+      "word_count": 450,
+      "character_count": 2700,
+      "author_name": "john@example.com",
+      "user_role": "editor",
+      "edit_permissions": true,
+      "api_version": "1.0",
+      "request_id": "req_abc123def456",
+      "cache_key": "article:1:1705492800",
+      "timestamp": "2024-03-15T16:45:30Z",
+      "resource_version": "2.1"
+    }
+  }
+}
+```
+
+### Update Article
+```http
+PATCH /articles/1
+Content-Type: application/vnd.api+json
+Authorization: Bearer user_token
+
+{
+  "data": {
+    "id": "1",
+    "type": "articles",
+    "attributes": {
+      "status": "published"
+    }
+  }
+}
+
+HTTP/1.1 200 OK
+Content-Type: application/vnd.api+json
+
+{
+  "data": {
+    "id": "1",
+    "type": "articles",
+    "attributes": {
+      "title": "Meta Field Configuration Guide",
+      "content": "This guide demonstrates all the different ways to configure meta fields in JPie...",
+      "status": "published"
+    },
+    "meta": {
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-16T14:20:00Z",
+      "published_at": "2024-01-16T09:00:00Z",
+      "author_id": 123,
+      "view_count": 1547,
+      "reading_time": {
+        "minutes": 3,
+        "formatted": "3 min read"
+      },
+      "word_count": 450,
+      "character_count": 2700,
+      "author_name": "john@example.com",
+      "user_role": "editor",
+      "edit_permissions": true,
+      "api_version": "1.0",
+      "request_id": "req_xyz789ghi012",
+      "cache_key": "article:1:1705492800",
+      "timestamp": "2024-03-15T16:45:30Z",
+      "resource_version": "2.1"
+    }
+  }
+}
+```
 
 ### Get Article with All Meta Field Configurations
 ```http

@@ -116,6 +116,105 @@ end
 
 ## HTTP Examples
 
+### Create User
+```http
+POST /users
+Content-Type: application/vnd.api+json
+Authorization: Bearer admin_token
+
+{
+  "data": {
+    "type": "users",
+    "attributes": {
+      "email": "john.doe@example.com",
+      "first_name": "John",
+      "last_name": "Doe"
+    }
+  }
+}
+
+HTTP/1.1 201 Created
+Content-Type: application/vnd.api+json
+
+{
+  "data": {
+    "id": "1",
+    "type": "users",
+    "attributes": {
+      "email": "john.doe@example.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "display_name": "johndoe",
+      "status": "active",
+      "account_type": "user",
+      "full_name": "John Doe",
+      "display_role": "Admin View: john.doe@example.com",
+      "account_summary": {
+        "name": "John Doe",
+        "status": "active",
+        "email_domain": "example.com",
+        "created_days_ago": 0
+      },
+      "formatted_last_login": "Never logged in",
+      "sensitive_data": {
+        "internal_id": 1,
+        "created_at": "2024-01-15T10:30:00Z",
+        "last_login": null
+      }
+    }
+  }
+}
+```
+
+### Update User
+```http
+PATCH /users/1
+Content-Type: application/vnd.api+json
+Authorization: Bearer admin_token
+
+{
+  "data": {
+    "id": "1",
+    "type": "users",
+    "attributes": {
+      "first_name": "Jonathan"
+    }
+  }
+}
+
+HTTP/1.1 200 OK
+Content-Type: application/vnd.api+json
+
+{
+  "data": {
+    "id": "1",
+    "type": "users",
+    "attributes": {
+      "email": "john.doe@example.com",
+      "first_name": "Jonathan",
+      "last_name": "Doe",
+      "display_name": "johndoe",
+      "status": "active",
+      "account_type": "user",
+      "full_name": "Jonathan Doe",
+      "display_role": "Admin View: john.doe@example.com",
+      "account_summary": {
+        "name": "Jonathan Doe",
+        "status": "active",
+        "email_domain": "example.com",
+        "created_days_ago": 45
+      },
+      "formatted_last_login": "March 15, 2024 at 02:30 PM",
+      "sensitive_data": {
+        "internal_id": 1,
+        "created_at": "2023-01-15T10:30:00Z",
+        "last_login": "2024-03-15T14:30:00Z"
+      }
+    }
+  }
+}
+```
+
 ### Get User with All Attribute Override Types (Admin Context)
 ```http
 GET /users/1

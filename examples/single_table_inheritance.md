@@ -92,6 +92,39 @@ Content-Type: application/vnd.api+json
 }
 ```
 
+### Update Car
+```http
+PATCH /vehicles/1
+Content-Type: application/vnd.api+json
+
+{
+  "data": {
+    "id": "1",
+    "type": "cars",
+    "attributes": {
+      "name": "Civic Hybrid",
+      "engine_size": 1800
+    }
+  }
+}
+
+HTTP/1.1 200 OK
+Content-Type: application/vnd.api+json
+
+{
+  "data": {
+    "id": "1",
+    "type": "cars",
+    "attributes": {
+      "name": "Civic Hybrid",
+      "brand": "Honda",
+      "year": 2024,
+      "engine_size": 1800
+    }
+  }
+}
+```
+
 ### Get Mixed Vehicles
 ```http
 GET /vehicles

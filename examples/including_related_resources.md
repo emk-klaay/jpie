@@ -114,6 +114,114 @@ end
 
 ## HTTP Examples
 
+### Create Post with Included User
+```http
+POST /posts?include=user
+Content-Type: application/vnd.api+json
+
+{
+  "data": {
+    "type": "posts",
+    "attributes": {
+      "title": "Getting Started with JPie",
+      "content": "This post explains how to use JPie...",
+      "user_id": 1
+    }
+  }
+}
+
+HTTP/1.1 201 Created
+Content-Type: application/vnd.api+json
+
+{
+  "data": {
+    "id": "1",
+    "type": "posts",
+    "attributes": {
+      "title": "Getting Started with JPie",
+      "content": "This post explains how to use JPie..."
+    },
+    "meta": {
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T10:30:00Z"
+    }
+  },
+  "included": [
+    {
+      "id": "1",
+      "type": "users",
+      "attributes": {
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      "meta": {
+        "created_at": "2024-01-10T09:00:00Z",
+        "updated_at": "2024-01-10T09:00:00Z"
+      }
+    }
+  ]
+}
+```
+
+### Update Post with Included User and Comments
+```http
+PATCH /posts/1?include=user,comments
+Content-Type: application/vnd.api+json
+
+{
+  "data": {
+    "id": "1",
+    "type": "posts",
+    "attributes": {
+      "title": "Advanced JPie Techniques"
+    }
+  }
+}
+
+HTTP/1.1 200 OK
+Content-Type: application/vnd.api+json
+
+{
+  "data": {
+    "id": "1",
+    "type": "posts",
+    "attributes": {
+      "title": "Advanced JPie Techniques",
+      "content": "This post explains how to use JPie..."
+    },
+    "meta": {
+      "created_at": "2024-01-15T10:30:00Z",
+      "updated_at": "2024-01-15T11:00:00Z"
+    }
+  },
+  "included": [
+    {
+      "id": "1",
+      "type": "users",
+      "attributes": {
+        "name": "John Doe",
+        "email": "john@example.com"
+      },
+      "meta": {
+        "created_at": "2024-01-10T09:00:00Z",
+        "updated_at": "2024-01-10T09:00:00Z"
+      }
+    },
+    {
+      "id": "1",
+      "type": "comments",
+      "attributes": {
+        "content": "Great post! Very helpful."
+      },
+      "meta": {
+        "created_at": "2024-01-15T11:00:00Z",
+        "updated_at": "2024-01-15T11:00:00Z"
+      }
+    }
+  ]
+}
+```
+
 ### Single Include - Post with User
 ```http
 GET /posts/1?include=user
