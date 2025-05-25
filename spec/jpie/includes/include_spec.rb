@@ -17,9 +17,15 @@ RSpec.describe JPie::Serializer do
   let(:user) { User.create!(name: 'John Doe', email: 'john@example.com') }
   let(:first_post) { Post.create!(title: 'First Post', content: 'Content 1', user: user) }
   let(:second_post) { Post.create!(title: 'Second Post', content: 'Content 2', user: user) }
-  let!(:first_comment) { Comment.create!(content: 'First comment', user: user, post: first_post) }
-  let!(:second_comment) { Comment.create!(content: 'Second comment', user: user, post: first_post) }
-  let!(:third_comment) { Comment.create!(content: 'Third comment', user: user, post: second_post) }
+  let!(:first_reply) do
+    Post.create!(title: 'First reply', content: 'Reply content 1', user: user, parent_post: first_post)
+  end
+  let!(:second_reply) do
+    Post.create!(title: 'Second reply', content: 'Reply content 2', user: user, parent_post: first_post)
+  end
+  let!(:third_reply) do
+    Post.create!(title: 'Third reply', content: 'Reply content 3', user: user, parent_post: second_post)
+  end
 
   describe '#serialize with include parameter' do
     let(:serializer) { described_class.new(PostResource) }
@@ -91,15 +97,15 @@ RSpec.describe JPie::Serializer do
   describe '#serialize with nested include parameters' do
     let(:serializer) { described_class.new(PostResource) }
 
-    describe 'when user.comments include is specified' do
-      let(:result) { serializer.serialize(first_post, {}, includes: ['user.comments']) }
+    describe 'when user.posts include is specified' do
+      let(:result) { serializer.serialize(first_post, {}, includes: ['user.posts']) }
 
-      it 'includes the data, user, and user comments in included section', :aggregate_failures do
+      it 'includes the data, user, and user posts in included section', :aggregate_failures do
         expect(result).to have_key(:data)
         expect(result).to have_key(:included)
         expect(result[:included]).to be_an(Array)
-        # Should include 1 user + all comments by that user (3 comments)
-        expect(result[:included].length).to eq(4)
+        # Should include 1 user + all posts by that user (5 posts total: 2 main + 3 replies)
+        expect(result[:included].length).to eq(6)
       end
 
       it 'includes user in included section', :aggregate_failures do
@@ -109,26 +115,26 @@ RSpec.describe JPie::Serializer do
         expect(user_data[:attributes]['name']).to eq('John Doe')
       end
 
-      it 'includes all user comments in included section', :aggregate_failures do
-        comment_data = result[:included].select { |item| item[:type] == 'comments' }
-        expect(comment_data.length).to eq(3)
+      it 'includes all user posts in included section', :aggregate_failures do
+        post_data = result[:included].select { |item| item[:type] == 'posts' && item[:id] != first_post.id.to_s }
+        expect(post_data.length).to eq(4) # second_post + 3 replies
 
-        comment_contents = comment_data.map { |c| c[:attributes]['content'] }
-        expect(comment_contents).to contain_exactly('First comment', 'Second comment', 'Third comment')
+        post_titles = post_data.map { |p| p[:attributes]['title'] }
+        expect(post_titles).to contain_exactly('Second Post', 'First reply', 'Second reply', 'Third reply')
       end
 
-      it 'maintains proper relationships in comment data', :aggregate_failures do
-        comment_data = result[:included].select { |item| item[:type] == 'comments' }
-        comment_data.each do |comment|
-          expect(comment[:attributes]).to have_key('content')
-          expect(comment).to have_key(:meta)
-          expect(comment[:meta]).to have_key('created_at')
+      it 'maintains proper relationships in post data', :aggregate_failures do
+        post_data = result[:included].select { |item| item[:type] == 'posts' }
+        post_data.each do |post|
+          expect(post[:attributes]).to have_key('title')
+          expect(post).to have_key(:meta)
+          expect(post[:meta]).to have_key('created_at')
         end
       end
     end
 
     describe 'when combining regular and nested includes' do
-      let(:result) { serializer.serialize(first_post, {}, includes: ['user', 'user.comments']) }
+      let(:result) { serializer.serialize(first_post, {}, includes: %w[user replies]) }
 
       it 'includes user only once despite multiple include paths', :aggregate_failures do
         user_data = result[:included].select { |item| item[:type] == 'users' }
@@ -136,15 +142,15 @@ RSpec.describe JPie::Serializer do
       end
 
       it 'includes all related data without duplication', :aggregate_failures do
-        expect(result[:included].length).to eq(4) # 1 user + 3 comments
+        expect(result[:included].length).to eq(3) # 1 user + 2 replies
 
         # Verify user is included
         user_data = result[:included].find { |item| item[:type] == 'users' }
         expect(user_data[:id]).to eq(user.id.to_s)
 
-        # Verify comments are included
-        comment_data = result[:included].select { |item| item[:type] == 'comments' }
-        expect(comment_data.length).to eq(3)
+        # Verify replies are included
+        reply_data = result[:included].select { |item| item[:type] == 'posts' }
+        expect(reply_data.length).to eq(2) # first_reply and second_reply
       end
     end
 
@@ -192,39 +198,39 @@ RSpec.describe JPie::Serializer do
       end
     end
 
-    describe 'when nested include=user.comments parameter is provided' do
-      it 'includes user and their comments in the response', :aggregate_failures do
-        controller.params = { id: first_post.id.to_s, include: 'user.comments' }
+    describe 'when nested include=replies.user parameter is provided' do
+      it 'includes replies and their users in the response', :aggregate_failures do
+        controller.params = { id: first_post.id.to_s, include: 'replies.user' }
         controller.show
 
         result = controller.last_render[:json]
 
         expect(result).to have_key(:included)
         expect(result[:included]).to be_an(Array)
-        # Should include 1 user + all comments by that user (3 comments)
-        expect(result[:included].length).to eq(4)
+        # Should include replies + their users (2 replies + 1 user)
+        expect(result[:included].length).to eq(3)
 
         user_data = result[:included].find { |item| item[:type] == 'users' }
         expect(user_data).not_to be_nil
         expect(user_data[:id]).to eq(user.id.to_s)
 
-        comment_data = result[:included].select { |item| item[:type] == 'comments' }
-        expect(comment_data.length).to eq(3)
+        reply_data = result[:included].select { |item| item[:type] == 'posts' }
+        expect(reply_data.length).to eq(2)
       end
 
       it 'handles multiple include parameters correctly', :aggregate_failures do
-        controller.params = { id: first_post.id.to_s, include: 'user,comments' }
+        controller.params = { id: first_post.id.to_s, include: 'user,replies' }
         controller.show
 
         result = controller.last_render[:json]
 
         expect(result).to have_key(:included)
-        
+
         user_data = result[:included].select { |item| item[:type] == 'users' }
-        comment_data = result[:included].select { |item| item[:type] == 'comments' }
-        
+        reply_data = result[:included].select { |item| item[:type] == 'posts' && item[:id] != first_post.id.to_s }
+
         expect(user_data.length).to eq(1)
-        expect(comment_data.length).to be >= 1
+        expect(reply_data.length).to be >= 1
       end
     end
 

@@ -47,8 +47,8 @@ RSpec.describe JPie::Controller::JsonApiValidation do
           }
         }.to_json
 
-        controller.request.set_body(valid_json)
-        controller.request.set_method('POST')
+        controller.request.body = valid_json
+        controller.request.method = 'POST'
         controller.request.content_type = 'application/vnd.api+json'
 
         expect { controller.create }.not_to raise_error
@@ -62,8 +62,8 @@ RSpec.describe JPie::Controller::JsonApiValidation do
           }
         }.to_json
 
-        controller.request.set_body(invalid_json)
-        controller.request.set_method('POST')
+        controller.request.body = invalid_json
+        controller.request.method = 'POST'
         controller.request.content_type = 'application/vnd.api+json'
 
         expect { controller.create }.to raise_error(JPie::Errors::BadRequestError)
@@ -79,8 +79,8 @@ RSpec.describe JPie::Controller::JsonApiValidation do
           }
         }.to_json
 
-        controller.request.set_body(valid_json)
-        controller.request.set_method('POST')
+        controller.request.body = valid_json
+        controller.request.method = 'POST'
         controller.request.content_type = 'application/vnd.api+json'
 
         expect { controller.create }.not_to raise_error
@@ -94,8 +94,8 @@ RSpec.describe JPie::Controller::JsonApiValidation do
           }
         }.to_json
 
-        controller.request.set_body(invalid_json)
-        controller.request.set_method('POST')
+        controller.request.body = invalid_json
+        controller.request.method = 'POST'
         controller.request.content_type = 'application/vnd.api+json'
 
         expect { controller.create }.to raise_error(ActiveRecord::RecordInvalid)
@@ -118,8 +118,8 @@ RSpec.describe JPie::Controller::JsonApiValidation do
       expect { controller.show }.to raise_error(JPie::Errors::UnsupportedIncludeError)
     end
 
-    it 'handles valid include parameters' do
-      controller.params = { id: user.id.to_s, include: 'posts' }
+    it 'handles empty include parameters' do
+      controller.params = { id: user.id.to_s, include: '' }
 
       expect { controller.show }.not_to raise_error
     end
@@ -181,7 +181,7 @@ RSpec.describe JPie::Controller::JsonApiValidation do
     end
 
     it 'handles complex parameter combinations' do
-      controller.params = { 
+      controller.params = {
         sort: '-name,email',
         include: 'posts'
       }

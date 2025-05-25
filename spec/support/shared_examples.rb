@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 RSpec.shared_examples 'automatic author assignment' do |resource_type, attributes|
   let(:user) { User.create!(name: 'Test User', email: 'test@example.com') }
   let(:controller_class) { create_test_controller("#{resource_type.to_s.classify.pluralize}Controller") }
@@ -18,8 +20,8 @@ RSpec.shared_examples 'automatic author assignment' do |resource_type, attribute
       }
     }
 
-    controller.request.set_body(resource_params.to_json)
-    controller.request.set_method('POST')
+    controller.request.body = resource_params.to_json
+    controller.request.method = 'POST'
     controller.request.content_type = 'application/vnd.api+json'
 
     controller.create
@@ -27,12 +29,12 @@ RSpec.shared_examples 'automatic author assignment' do |resource_type, attribute
     expect(controller.last_render[:status]).to eq(:created)
 
     created_resource = resource_type.to_s.classify.constantize.last
-    
+
     # Verify the resource was created with the provided attributes
     attributes.each do |key, value|
       expect(created_resource.send(key)).to eq(value)
     end
-    
+
     # Verify the response contains the created resource
     response_data = controller.last_render[:json]
     expect(response_data[:data][:type]).to eq(resource_type.to_s.pluralize)
@@ -45,7 +47,7 @@ RSpec.shared_examples 'standard CRUD operations' do |resource_type, factory_attr
   let(:resource_class) { resource_type.to_s.classify.constantize }
   let(:controller_class) { create_test_controller("#{resource_type.to_s.classify.pluralize}Controller") }
   let(:controller) { controller_class.new }
-  
+
   # Use the correct association name based on the model
   let(:resource) do
     if resource_type == :post
@@ -86,7 +88,7 @@ RSpec.shared_examples 'standard CRUD operations' do |resource_type, factory_attr
     it 'updates resource without affecting author' do
       update_attributes = factory_attributes.keys.first
       new_value = "Updated #{factory_attributes.values.first}"
-      
+
       update_params = {
         data: {
           id: resource.id.to_s,
@@ -96,8 +98,8 @@ RSpec.shared_examples 'standard CRUD operations' do |resource_type, factory_attr
       }
 
       controller.params = { id: resource.id.to_s }
-      controller.request.set_body(update_params.to_json)
-      controller.request.set_method('PATCH')
+      controller.request.body = update_params.to_json
+      controller.request.method = 'PATCH'
       controller.request.content_type = 'application/vnd.api+json'
 
       controller.update
@@ -106,7 +108,7 @@ RSpec.shared_examples 'standard CRUD operations' do |resource_type, factory_attr
 
       resource.reload
       expect(resource.send(update_attributes)).to eq(new_value)
-      
+
       # Use the correct association name based on the model
       if resource_type == :post
         expect(resource.user).to eq(user)
@@ -133,14 +135,14 @@ end
 RSpec.shared_examples 'JSON:API content type validation' do
   it 'passes with correct content type' do
     controller.request.content_type = 'application/vnd.api+json'
-    controller.request.set_method('POST')
+    controller.request.method = 'POST'
 
     expect { controller.send(:validate_content_type) }.not_to raise_error
   end
 
   it 'raises error with incorrect content type' do
     controller.request.content_type = 'application/json'
-    controller.request.set_method('POST')
+    controller.request.method = 'POST'
 
     expect { controller.send(:validate_content_type) }.to raise_error(
       JPie::Errors::InvalidJsonApiRequestError,
@@ -150,7 +152,7 @@ RSpec.shared_examples 'JSON:API content type validation' do
 
   it 'skips validation for GET requests' do
     controller.request.content_type = 'application/json'
-    controller.request.set_method('GET')
+    controller.request.method = 'GET'
 
     expect { controller.send(:validate_content_type) }.not_to raise_error
   end
@@ -165,16 +167,16 @@ RSpec.shared_examples 'JSON:API structure validation' do
       }
     }.to_json
 
-    controller.request.set_body(valid_json)
-    controller.request.set_method('POST')
+    controller.request.body = valid_json
+    controller.request.method = 'POST'
 
     expect { controller.send(:validate_json_api_structure) }.not_to raise_error
   end
 
   it 'raises error with missing data member' do
     invalid_json = { type: 'users' }.to_json
-    controller.request.set_body(invalid_json)
-    controller.request.set_method('POST')
+    controller.request.body = invalid_json
+    controller.request.method = 'POST'
 
     expect { controller.send(:validate_json_api_structure) }.to raise_error(
       JPie::Errors::InvalidJsonApiRequestError,
@@ -183,8 +185,8 @@ RSpec.shared_examples 'JSON:API structure validation' do
   end
 
   it 'raises error with invalid JSON' do
-    controller.request.set_body('invalid json')
-    controller.request.set_method('POST')
+    controller.request.body = 'invalid json'
+    controller.request.method = 'POST'
 
     expect { controller.send(:validate_json_api_structure) }.to raise_error(
       JPie::Errors::InvalidJsonApiRequestError,
@@ -199,12 +201,12 @@ RSpec.shared_examples 'JSON:API structure validation' do
       }
     }.to_json
 
-    controller.request.set_body(invalid_json)
-    controller.request.set_method('POST')
+    controller.request.body = invalid_json
+    controller.request.method = 'POST'
 
     expect { controller.send(:validate_json_api_structure) }.to raise_error(
       JPie::Errors::InvalidJsonApiRequestError,
       /must have a "type" member/
     )
   end
-end 
+end
