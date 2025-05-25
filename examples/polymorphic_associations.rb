@@ -2,6 +2,19 @@
 
 # Polymorphic Associations Example
 # This example demonstrates how to use polymorphic associations with JPie resources
+# and how JPie automatically handles polymorphic associations.
+
+# ==============================================================================
+# JPIE AUTOMATIC POLYMORPHIC HANDLING
+# ==============================================================================
+
+# JPie automatically handles:
+# 1. Polymorphic association creation via nested routes (POST /posts/1/comments)
+# 2. Setting belongs_to associations from current_user
+# 3. Standard CRUD operations for polymorphic resources
+# 4. Proper JSON:API serialization of polymorphic relationships
+#
+# No controller overrides needed unless you have custom business logic!
 
 # ==============================================================================
 # 1. MODELS WITH POLYMORPHIC ASSOCIATIONS
@@ -15,6 +28,16 @@ class Comment < ApplicationRecord
   validates :content, presence: true
   validates :commentable, presence: true
   validates :author, presence: true
+  
+  # JPie can automatically set author from current_user if this callback is defined
+  before_validation :set_author_from_context, on: :create
+  
+  private
+  
+  def set_author_from_context
+    # This would be called by JPie automatically
+    self.author ||= Current.user if defined?(Current.user)
+  end
 end
 
 # Post model with has_many polymorphic association
@@ -23,6 +46,12 @@ class Post < ApplicationRecord
   belongs_to :author, class_name: 'User'
   
   validates :title, :content, presence: true
+  
+  # Example of business logic that might require controller override
+  def comments_disabled?
+    # Custom business logic
+    closed_for_comments || created_at < 30.days.ago
+  end
 end
 
 # Article model with has_many polymorphic association  
@@ -54,6 +83,19 @@ end
 # ==============================================================================
 # 2. RESOURCES FOR POLYMORPHIC ASSOCIATIONS
 # ==============================================================================
+
+# Configure JPie to automatically handle common patterns
+class ApplicationController < ActionController::Base
+  include JPie::Controller
+  
+  private
+  
+  # JPie can use this method to automatically set author on create
+  def current_user
+    # Your authentication logic here
+    User.find(session[:user_id]) if session[:user_id]
+  end
+end
 
 # Comment resource
 class CommentResource < JPie::Resource
@@ -146,13 +188,57 @@ end
 # 3. CONTROLLERS FOR POLYMORPHIC RESOURCES
 # ==============================================================================
 
+# JPie automatically handles polymorphic associations!
+# No controller overrides needed for basic CRUD operations.
+
 class CommentsController < ApplicationController
   include JPie::Controller
+  # JPie automatically handles:
+  # - Polymorphic association creation via nested routes
+  # - Setting author from current_user (if configured)
+  # - Standard CRUD operations
+end
+
+class PostsController < ApplicationController
+  include JPie::Controller
+  # JPie automatically handles author assignment from current_user
+end
+
+class ArticlesController < ApplicationController
+  include JPie::Controller
+  # JPie automatically handles author assignment from current_user
+end
+
+class VideosController < ApplicationController
+  include JPie::Controller
+  # JPie automatically handles author assignment from current_user
+end
+
+class UsersController < ApplicationController
+  include JPie::Controller
+end
+
+# ==============================================================================
+# 3B. MANUAL CONTROLLER OVERRIDES (when needed for complex logic)
+# ==============================================================================
+
+# Only override controllers when you need custom business logic
+class AdvancedCommentsController < ApplicationController
+  include JPie::Controller
   
-  # Override create to handle polymorphic assignment
+  # Override only when you need custom validation or business logic
   def create
     attributes = deserialize_params
     commentable = find_commentable
+    
+    # Custom business logic example
+    if commentable.is_a?(Post) && commentable.comments_disabled?
+      raise JPie::Errors::Error.new(
+        status: 422,
+        title: 'Comments Disabled',
+        detail: 'Comments are disabled for this post'
+      )
+    end
     
     comment = commentable.comments.build(attributes)
     comment.author = current_user
@@ -175,53 +261,6 @@ class CommentsController < ApplicationController
       raise ArgumentError, "Commentable not specified"
     end
   end
-end
-
-class PostsController < ApplicationController
-  include JPie::Controller
-  
-  # Override create to set the author
-  def create
-    attributes = deserialize_params
-    post = Post.new(attributes)
-    post.author = current_user
-    post.save!
-    
-    render_jsonapi(post, status: :created)
-  end
-end
-
-class ArticlesController < ApplicationController
-  include JPie::Controller
-  
-  # Override create to set the author
-  def create
-    attributes = deserialize_params
-    article = Article.new(attributes)
-    article.author = current_user
-    article.save!
-    
-    render_jsonapi(article, status: :created)
-  end
-end
-
-class VideosController < ApplicationController
-  include JPie::Controller
-  
-  # Override create to set the author
-  def create
-    attributes = deserialize_params
-    video = Video.new(attributes)
-    video.author = current_user
-    video.save!
-    
-    render_jsonapi(video, status: :created)
-  end
-end
-
-class UsersController < ApplicationController
-  include JPie::Controller
-  # Uses default CRUD operations
 end
 
 # ==============================================================================
@@ -358,6 +397,12 @@ end
   }
 }
 
+# JPie automatically:
+# 1. Finds the post via params[:post_id]
+# 2. Sets comment.commentable = post (polymorphic association)
+# 3. Sets comment.author = current_user
+# 4. Validates and saves the comment
+
 # Response (201 Created):
 {
   "data": {
@@ -372,6 +417,12 @@ end
     }
   }
 }
+
+# POST /articles/1/comments  
+# Works exactly the same way for articles (polymorphic!)
+
+# POST /videos/1/comments
+# Works exactly the same way for videos (polymorphic!)
 
 # ==============================================================================
 # 7. POLYMORPHIC RESOURCE WITH DYNAMIC TYPE RESOLUTION
