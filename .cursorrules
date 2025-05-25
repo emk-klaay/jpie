@@ -22,7 +22,7 @@
 # Git commit guidelines
 - Write clear, descriptive commit messages
 - Keep commits focused and atomic
-- Run tests before committing
+- Run and pass tests before committing
 - Update documentation in the same commit as code changes
 - Ignore spec/examples.txt and other files listed in .gitignore
 - Include Ruby/Rails version requirements in relevant commits
@@ -63,6 +63,7 @@
 - Always read the .aiconfig file 
 - Always implement code slowly and methodically 
 - Always test as you go
+- Always make sure rubocop passes
 
 # Examples
 - The examples must _only_ include _required_ code
