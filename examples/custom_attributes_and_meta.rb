@@ -10,7 +10,7 @@
 class User < ApplicationRecord
   validates :first_name, :last_name, :email, presence: true
   
-  has_many :posts, dependent: :destroy
+  has_many :posts, foreign_key: 'author_id', dependent: :destroy
   has_one :profile, dependent: :destroy
   
   scope :active, -> { where(active: true) }
@@ -22,6 +22,29 @@ class User < ApplicationRecord
   def posts_count
     posts.count
   end
+  
+  def admin?
+    # Simple admin check - in real app this might be a role or permission system
+    role == 'admin'
+  end
+  
+  def active?
+    active
+  end
+end
+
+class Post < ApplicationRecord
+  belongs_to :author, class_name: 'User'
+  
+  validates :title, :content, presence: true
+  
+  scope :published, -> { where(published: true) }
+end
+
+class Profile < ApplicationRecord
+  belongs_to :user
+  
+  validates :user, presence: true
 end
 
 # ==============================================================================

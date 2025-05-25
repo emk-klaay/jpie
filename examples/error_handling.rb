@@ -49,12 +49,12 @@ end
 # 2. MODELS WITH CUSTOM VALIDATIONS
 # ==============================================================================
 
-class User < ActiveRecord::Base
+class User < ApplicationRecord
   validates :name, presence: true, length: { minimum: 2, maximum: 50 }
   validates :email, presence: true, uniqueness: true, format: { with: URI::MailTo::EMAIL_REGEXP }
   validates :age, presence: true, numericality: { greater_than: 13, less_than: 120 }
   
-  has_many :posts, dependent: :destroy
+  has_many :posts, foreign_key: 'author_id', dependent: :destroy
   
   # Custom business logic validation
   def validate_posting_privileges
@@ -72,9 +72,14 @@ class User < ActiveRecord::Base
     
     raise RateLimitError.new(limit: 5, window: '1 hour')
   end
+  
+  def admin?
+    # Simple admin check - in real app this might be a role or permission system
+    role == 'admin'
+  end
 end
 
-class Post < ActiveRecord::Base
+class Post < ApplicationRecord
   belongs_to :author, class_name: 'User'
   
   validates :title, presence: true, length: { minimum: 10, maximum: 100 }
@@ -284,6 +289,7 @@ end
 
 class AdvancedErrorController < ApplicationController
   # Option 2: Completely custom error handling
+  # Note: disable_jpie_error_handlers is a hypothetical method for demonstration
   disable_jpie_error_handlers
   
   rescue_from StandardError, with: :handle_standard_error

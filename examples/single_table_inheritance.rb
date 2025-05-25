@@ -8,7 +8,7 @@
 # ==============================================================================
 
 # Base model
-class Vehicle < ActiveRecord::Base
+class Vehicle < ApplicationRecord
   validates :name, presence: true
   validates :brand, presence: true
   validates :year, presence: true, numericality: { greater_than: 1900 }

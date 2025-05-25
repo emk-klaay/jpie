@@ -179,6 +179,22 @@ end
 # 6. ADVANCED THROUGH ASSOCIATIONS
 # ==============================================================================
 
+# Additional models for advanced examples
+class Vehicle < ApplicationRecord
+  # For the VehicleResource example - could be the same as Car
+  # or a separate model that also has car_drivers
+  has_many :car_drivers, dependent: :destroy
+  has_many :drivers, through: :car_drivers
+  
+  validates :make, :model, :year, presence: true
+end
+
+class Company < ApplicationRecord
+  has_many :cars, dependent: :destroy
+  
+  validates :name, :address, presence: true
+end
+
 # Custom relationship names with through associations
 class VehicleResource < JPie::Resource
   attributes :make, :model, :year

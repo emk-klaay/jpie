@@ -7,7 +7,7 @@
 # 1. BASIC MODEL
 # ==============================================================================
 
-class User < ActiveRecord::Base
+class User < ApplicationRecord
   validates :name, presence: true
   validates :email, presence: true, uniqueness: true
   

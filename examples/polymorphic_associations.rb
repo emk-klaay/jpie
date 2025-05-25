@@ -8,7 +8,7 @@
 # ==============================================================================
 
 # Comment model with belongs_to polymorphic association
-class Comment < ActiveRecord::Base
+class Comment < ApplicationRecord
   belongs_to :commentable, polymorphic: true
   belongs_to :author, class_name: 'User'
   
@@ -18,7 +18,7 @@ class Comment < ActiveRecord::Base
 end
 
 # Post model with has_many polymorphic association
-class Post < ActiveRecord::Base
+class Post < ApplicationRecord
   has_many :comments, as: :commentable, dependent: :destroy
   belongs_to :author, class_name: 'User'
   
@@ -26,7 +26,7 @@ class Post < ActiveRecord::Base
 end
 
 # Article model with has_many polymorphic association  
-class Article < ActiveRecord::Base
+class Article < ApplicationRecord
   has_many :comments, as: :commentable, dependent: :destroy
   belongs_to :author, class_name: 'User'
   
@@ -34,7 +34,7 @@ class Article < ActiveRecord::Base
 end
 
 # Video model with has_many polymorphic association
-class Video < ActiveRecord::Base
+class Video < ApplicationRecord
   has_many :comments, as: :commentable, dependent: :destroy
   belongs_to :author, class_name: 'User'
   
@@ -42,7 +42,7 @@ class Video < ActiveRecord::Base
 end
 
 # User model
-class User < ActiveRecord::Base
+class User < ApplicationRecord
   has_many :posts, foreign_key: 'author_id', dependent: :destroy
   has_many :articles, foreign_key: 'author_id', dependent: :destroy
   has_many :videos, foreign_key: 'author_id', dependent: :destroy

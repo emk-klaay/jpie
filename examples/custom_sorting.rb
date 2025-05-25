@@ -7,7 +7,7 @@
 # 1. MODEL WITH SORTING NEEDS
 # ==============================================================================
 
-class Post < ActiveRecord::Base
+class Post < ApplicationRecord
   belongs_to :author, class_name: 'User'
   has_many :comments, dependent: :destroy
   has_many :likes, dependent: :destroy
@@ -38,14 +38,40 @@ class Post < ActiveRecord::Base
   end
 end
 
-class User < ActiveRecord::Base
+class User < ApplicationRecord
   has_many :posts, foreign_key: 'author_id', dependent: :destroy
+  has_many :likes, dependent: :destroy
+  has_many :bookmarks, dependent: :destroy
   
   validates :name, :email, presence: true
   
   def reputation_score
     posts.sum(&:popularity_score) / [posts.count, 1].max
   end
+end
+
+class Like < ApplicationRecord
+  belongs_to :post
+  belongs_to :user
+  
+  validates :post, :user, presence: true
+  validates :user_id, uniqueness: { scope: :post_id }
+end
+
+class Comment < ApplicationRecord
+  belongs_to :post
+  belongs_to :author, class_name: 'User'
+  
+  validates :content, presence: true
+  validates :post, :author, presence: true
+end
+
+class Bookmark < ApplicationRecord
+  belongs_to :post
+  belongs_to :user
+  
+  validates :post, :user, presence: true
+  validates :user_id, uniqueness: { scope: :post_id }
 end
 
 # ==============================================================================
@@ -89,9 +115,6 @@ class PostResource < JPie::Resource
     # Sort by related model attribute
     query.joins(:author).order("users.name #{direction.to_s.upcase}")
   end
-  
-  # Alias for backward compatibility
-  sortable_by :trending, &method(:popularity)
 end
 
 # ==============================================================================
@@ -199,8 +222,8 @@ class PostsController < ApplicationController
   def trending
     posts = Post.published
     
-    # Apply trending sort by default
-    sorted_posts = resource_class.apply_sort(posts, 'trending', :desc)
+    # Apply popularity sort by default (trending posts are popular posts)
+    sorted_posts = resource_class.apply_sort(posts, 'popularity', :desc)
     
     render_jsonapi(sorted_posts.limit(20))
   end
