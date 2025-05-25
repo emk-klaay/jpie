@@ -63,3 +63,8 @@
 - Always read the .aiconfig file 
 - Always implement code slowly and methodically 
 - Always test as you go
+
+# Examples
+- The examples must _only_ include _required_ code
+- Examples must be a single markdown file
+- Examples must use the `http` code blocks for exampels
