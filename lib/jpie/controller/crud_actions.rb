@@ -39,7 +39,12 @@ module JPie
             resources = resource_class.scope(context)
             sort_fields = parse_sort_params
             resources = resource_class.sort(resources, sort_fields) if sort_fields.any?
-            render_jsonapi(resources)
+
+            pagination_params = parse_pagination_params
+            original_resources = resources
+            resources = apply_pagination(resources, pagination_params)
+
+            render_jsonapi(resources, pagination: pagination_params, original_scope: original_resources)
           end
         end
 
@@ -86,7 +91,12 @@ module JPie
         resources = resource_class.scope(context)
         sort_fields = parse_sort_params
         resources = resource_class.sort(resources, sort_fields) if sort_fields.any?
-        render_jsonapi(resources)
+
+        pagination_params = parse_pagination_params
+        original_resources = resources
+        resources = apply_pagination(resources, pagination_params)
+
+        render_jsonapi(resources, pagination: pagination_params, original_scope: original_resources)
       end
 
       def show
@@ -114,6 +124,17 @@ module JPie
         resource = resource_class.scope(context).find(params[:id])
         resource.destroy!
         head :no_content
+      end
+
+      private
+
+      def apply_pagination(resources, pagination_params)
+        return resources unless pagination_params[:per_page]
+
+        page = pagination_params[:page] || 1
+        per_page = pagination_params[:per_page]
+
+        resources.limit(per_page).offset((page - 1) * per_page)
       end
     end
   end

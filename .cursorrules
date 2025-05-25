@@ -67,6 +67,7 @@
 - Always implement code slowly and methodically 
 - Always test as you go
 - Always make sure rubocop passes
+- Do not add any functionality for the new feature to existing tests unless absolutely necessarry.
 
 # Examples
 - The examples must _only_ include _required_ code
