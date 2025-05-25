@@ -73,3 +73,4 @@
 - Examples must never include migrations.
 - Examples must not include a features section or similar
 - Examples must include an introduction to the example
+- Examples live in /examples/*.md
