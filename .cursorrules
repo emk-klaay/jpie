@@ -5,6 +5,10 @@
 - Follow Ruby style guide and RuboCop rules defined in .rubocop.yml
 - Prefer rubocop autocorrect 
 - Always pass rubocop before committing to git
+- Use `{data:}` rather than `{data: data}`
+- Only use code comments when abasolutely necessary
+- Keep any code comments short and concise
+- Don't update the .rubocop.yml unless it's absolutely necessarry
 
 # Documentation requirements
 - Keep README.md up to date with installation and usage instructions
@@ -33,6 +37,8 @@
 - Place tests in spec/jpie/
 - Use proper namespacing (JPie module)
 - Follow Ruby gem best practices
+- Do not update the spec/jpie/database.rb unless it's absolutely necessarry
+- Do not update the spec/jpie/resources.rb unless it's absolutely necessarry
 
 # Dependency management
 - Keep dependencies minimal and justified
@@ -55,9 +61,6 @@
 - Maintain Ruby 3.4+ compatibility
 - Support Rails 8+ integration
 - Follow JSON:API specification strictly
-
-# Styleguide
-- Use `{data:}` rather than `{data: data}`
 
 # When implementing new features or refactoring
 - Always read the .aiconfig file 
