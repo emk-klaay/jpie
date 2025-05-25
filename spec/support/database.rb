@@ -24,10 +24,25 @@ ActiveRecord::Schema.define do
     t.timestamps
   end
 
+  create_table :articles do |t|
+    t.string :title
+    t.text :body
+    t.integer :user_id
+    t.timestamps
+  end
+
+  create_table :videos do |t|
+    t.string :title
+    t.string :url
+    t.integer :user_id
+    t.timestamps
+  end
+
   create_table :comments do |t|
     t.text :content
     t.integer :user_id
     t.integer :post_id
+    t.references :commentable, polymorphic: true, null: true
     t.integer :parent_comment_id # For nested comments/replies
     t.timestamps
   end
@@ -65,6 +80,8 @@ end
 class User < ActiveRecord::Base
   validates :name, presence: true
   has_many :posts, dependent: :destroy
+  has_many :articles, dependent: :destroy
+  has_many :videos, dependent: :destroy
   has_many :comments, dependent: :destroy
   has_many :likes, dependent: :destroy
 end
@@ -73,19 +90,49 @@ class Post < ActiveRecord::Base
   belongs_to :user
   validates :title, presence: true
   has_many :comments, dependent: :destroy
+  has_many :polymorphic_comments, as: :commentable, class_name: 'Comment', dependent: :destroy
   has_many :taggings, as: :taggable, dependent: :destroy
   has_many :tags, through: :taggings
+
+  alias_method :author, :user
+  alias_method :author=, :user=
+end
+
+class Article < ActiveRecord::Base
+  belongs_to :user
+  validates :title, presence: true
+  has_many :comments, as: :commentable, dependent: :destroy
+  has_many :taggings, as: :taggable, dependent: :destroy
+  has_many :tags, through: :taggings
+
+  alias_method :author, :user
+  alias_method :author=, :user=
+end
+
+class Video < ActiveRecord::Base
+  belongs_to :user
+  validates :title, presence: true
+  has_many :comments, as: :commentable, dependent: :destroy
+  has_many :taggings, as: :taggable, dependent: :destroy
+  has_many :tags, through: :taggings
+
+  alias_method :author, :user
+  alias_method :author=, :user=
 end
 
 class Comment < ActiveRecord::Base
   belongs_to :user
-  belongs_to :post
+  belongs_to :post, optional: true
+  belongs_to :commentable, polymorphic: true, optional: true
   belongs_to :parent_comment, class_name: 'Comment', optional: true
   validates :content, presence: true
   has_many :likes, dependent: :destroy
   has_many :replies, class_name: 'Comment', foreign_key: 'parent_comment_id', dependent: :destroy
   has_many :taggings, as: :taggable, dependent: :destroy
   has_many :tags, through: :taggings
+
+  alias_method :author, :user
+  alias_method :author=, :user=
 end
 
 class Like < ActiveRecord::Base

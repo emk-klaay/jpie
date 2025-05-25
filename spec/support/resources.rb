@@ -5,6 +5,8 @@ class UserResource < JPie::Resource
   attributes :name, :email
   meta_attributes :created_at, :updated_at
   has_many :posts
+  has_many :articles
+  has_many :videos
   has_many :comments
   has_many :likes
 end
@@ -13,6 +15,25 @@ class PostResource < JPie::Resource
   attributes :title, :content
   meta_attributes :created_at, :updated_at
   has_one :user
+  has_one :author, attr: :user, resource: 'UserResource'
+  has_many :comments
+  has_many :tags
+end
+
+class ArticleResource < JPie::Resource
+  attributes :title, :body
+  meta_attributes :created_at, :updated_at
+  has_one :user
+  has_one :author, attr: :user, resource: 'UserResource'
+  has_many :comments
+  has_many :tags
+end
+
+class VideoResource < JPie::Resource
+  attributes :title, :url
+  meta_attributes :created_at, :updated_at
+  has_one :user
+  has_one :author, attr: :user, resource: 'UserResource'
   has_many :comments
   has_many :tags
 end
@@ -21,7 +42,9 @@ class CommentResource < JPie::Resource
   attributes :content
   meta_attributes :created_at, :updated_at
   has_one :user
+  has_one :author, attr: :user, resource: 'UserResource'
   has_one :post
+  has_one :commentable, polymorphic: true
   has_one :parent_comment, resource: 'CommentResource'
   has_many :likes
   has_many :replies, resource: 'CommentResource'
