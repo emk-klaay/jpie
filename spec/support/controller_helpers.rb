@@ -1,40 +1,51 @@
+# frozen_string_literal: true
+
 module ControllerHelpers
   def mock_request_classes
-    stub_const('MockRequest', Class.new do
-      attr_accessor :content_type
+    stub_const('MockRequest', create_mock_request_class)
+    stub_const('MockBody', create_mock_body_class)
+    stub_const('MockResponse', Class.new)
+  end
 
-      def initialize
-        @content_type = 'application/vnd.api+json'
-        @method = 'GET'
-        @body_content = '{}'
+  private
+
+  def create_mock_request_class
+    request_class = Class.new
+    setup_mock_request_class(request_class)
+    request_class
+  end
+
+  def setup_mock_request_class(request_class)
+    request_class.attr_accessor :content_type
+    add_request_initialization(request_class)
+    add_request_body_methods(request_class)
+    add_request_http_methods(request_class)
+  end
+
+  def add_request_initialization(request_class)
+    request_class.define_method(:initialize) do
+      @content_type = 'application/vnd.api+json'
+      @method = 'GET'
+      @body_content = '{}'
+    end
+  end
+
+  def add_request_body_methods(request_class)
+    request_class.define_method(:body) { MockBody.new(@body_content) }
+    request_class.define_method(:body=) { |content| @body_content = content }
+  end
+
+  def add_request_http_methods(request_class)
+    %w[POST PATCH PUT].each do |http_method|
+      request_class.define_method("#{http_method.downcase}?") do
+        @method == http_method
       end
+    end
+    request_class.define_method(:method=) { |method| @method = method.upcase }
+  end
 
-      def body
-        MockBody.new(@body_content)
-      end
-
-      def set_body(content)
-        @body_content = content
-      end
-
-      def post?
-        @method == 'POST'
-      end
-
-      def patch?
-        @method == 'PATCH'
-      end
-
-      def put?
-        @method == 'PUT'
-      end
-
-      def set_method(method)
-        @method = method.upcase
-      end
-    end)
-
-    stub_const('MockBody', Class.new do
+  def create_mock_body_class
+    Class.new do
       def initialize(content = '{}')
         @content = content
         @position = 0
@@ -49,12 +60,12 @@ module ControllerHelpers
       def rewind
         @position = 0
       end
-    end)
-
-    stub_const('MockResponse', Class.new)
+    end
   end
 
   def mock_application_controller
+    return if defined?(ApplicationController)
+
     stub_const('ApplicationController', Class.new do
       def self.rescue_from(exception_class, with: nil)
         # Mock implementation for testing
@@ -63,50 +74,51 @@ module ControllerHelpers
       def head(status)
         # Mock implementation
       end
-    end) unless defined?(ApplicationController)
+    end)
   end
 
   def create_test_controller(name, resource_class = nil)
+    setup_mock_classes
+    build_controller_class(name, resource_class)
+  end
+
+  def setup_mock_classes
     mock_request_classes
     mock_application_controller
+  end
 
-    Class.new(ApplicationController) do
-      include JPie::Controller
+  def build_controller_class(name, resource_class)
+    controller_class = Class.new(ApplicationController)
+    setup_controller_class(controller_class, name, resource_class)
+    controller_class
+  end
 
-      define_singleton_method(:name) { name }
+  def setup_controller_class(controller_class, name, resource_class)
+    controller_class.include JPie::Controller
+    controller_class.define_singleton_method(:name) { name }
+    controller_class.define_method(:resource_class) { resource_class } if resource_class
+    add_controller_methods(controller_class)
+  end
 
-      if resource_class
-        define_method(:resource_class) { resource_class }
-      end
+  def add_controller_methods(controller_class)
+    controller_class.attr_accessor :params, :request, :response
+    controller_class.attr_reader :last_render, :last_head
 
-      attr_accessor :params, :request, :response
-
-      def initialize
-        @params = {}
-        @request = MockRequest.new
-        @response = MockResponse.new
-      end
-
-      def render(options = {})
-        @last_render = options
-      end
-
-      def head(status)
-        @last_head = status
-      end
-
-      def action_name
-        'show'
-      end
-
-      attr_reader :last_render, :last_head
+    controller_class.define_method(:initialize) { setup_controller_defaults }
+    controller_class.define_method(:render) { |options = {}| @last_render = options }
+    controller_class.define_method(:head) { |status| @last_head = status }
+    controller_class.define_method(:action_name) { 'show' }
+    controller_class.define_method(:setup_controller_defaults) do
+      @params = {}
+      @request = MockRequest.new
+      @response = MockResponse.new
     end
   end
 
   def expect_json_api_response(controller, expected_keys = [:data])
     expect(controller.last_render).to have_key(:json)
     expect(controller.last_render[:content_type]).to eq('application/vnd.api+json')
-    
+
     expected_keys.each do |key|
       expect(controller.last_render[:json]).to have_key(key)
     end
@@ -115,4 +127,4 @@ end
 
 RSpec.configure do |config|
   config.include ControllerHelpers
-end 
+end
