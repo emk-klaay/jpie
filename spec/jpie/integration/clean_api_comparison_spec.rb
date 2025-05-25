@@ -144,4 +144,107 @@ RSpec.describe 'Clean API Design - Hiding Join Tables' do
       expect(direct_posts.first[:id]).to eq(semantic_posts.first[:id])
     end
   end
+
+  describe 'Clean Polymorphic API without Exposing Join Tables' do
+    # Additional test data for polymorphic scenarios (using unique names to avoid conflicts)
+    let!(:alice_poly) { User.create!(name: 'Alice Poly', email: 'alice.poly@example.com') }
+    let!(:bob_poly) { User.create!(name: 'Bob Poly', email: 'bob.poly@example.com') }
+
+    let!(:ruby_post_poly) { Post.create!(title: 'Ruby Tutorial Poly', content: 'Learning Ruby Poly', user: alice_poly) }
+    let!(:rails_post_poly) { Post.create!(title: 'Rails Guide Poly', content: 'Building with Rails Poly', user: bob_poly) }
+
+    let!(:comment1_poly) { Comment.create!(content: 'Great tutorial poly!', user: bob_poly, post: ruby_post_poly) }
+    let!(:comment2_poly) { Comment.create!(content: 'Very helpful poly', user: alice_poly, post: rails_post_poly) }
+
+    # Create separate tags for polymorphic tests to avoid conflicts
+    let!(:tag_ruby_poly) { Tag.create!(name: 'ruby_poly') }
+
+    before do
+      # Set up additional polymorphic tags for comprehensive testing
+      Tagging.create!(tag: tag_ruby_poly, taggable: ruby_post_poly)
+      Tagging.create!(tag: tag_ruby_poly, taggable: comment1_poly)
+    end
+
+    context 'Post serialization with polymorphic includes' do
+      let(:post_serializer) { JPie::Serializer.new(PostResource) }
+
+      it 'includes comments and their tags without exposing join table' do
+        result = post_serializer.serialize(ruby_post_poly, {}, includes: ['comments', 'comments.tags'])
+
+        expect(result[:included]).to be_present
+
+        comment_items = result[:included].select { |item| item[:type] == 'comments' }
+        tag_items = result[:included].select { |item| item[:type] == 'tags' }
+
+        expect(comment_items.count).to eq(1)
+        expect(tag_items.count).to eq(1) # Only ruby_poly (from comment1_poly)
+
+        tag_names = tag_items.map { |tag| tag[:attributes]['name'] }
+        expect(tag_names).to contain_exactly('ruby_poly')
+
+        # Should not expose any tagging resources
+        tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+        expect(tagging_items).to be_empty
+      end
+    end
+
+    context 'Tag serialization with polymorphic back-references' do
+      let(:tag_serializer) { JPie::Serializer.new(TagResource) }
+
+      it 'includes all posts and comments that have this tag' do
+        result = tag_serializer.serialize(tag_ruby_poly, {}, includes: %w[tagged_posts tagged_comments])
+
+        expect(result[:included]).to be_present
+
+        post_items = result[:included].select { |item| item[:type] == 'posts' }
+        comment_items = result[:included].select { |item| item[:type] == 'comments' }
+
+        expect(post_items.count).to eq(1) # ruby_post_poly
+        expect(comment_items.count).to eq(1) # comment1_poly
+
+        # Should not expose any tagging resources
+        tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+        expect(tagging_items).to be_empty
+      end
+
+      it 'supports deep includes through polymorphic relationships' do
+        result = tag_serializer.serialize(tag_ruby_poly, {}, includes: ['tagged_posts.user', 'tagged_comments.user'])
+
+        expect(result[:included]).to be_present
+
+        post_items = result[:included].select { |item| item[:type] == 'posts' }
+        comment_items = result[:included].select { |item| item[:type] == 'comments' }
+        user_items = result[:included].select { |item| item[:type] == 'users' }
+
+        expect(post_items.count).to eq(1)
+        expect(comment_items.count).to eq(1)
+        expect(user_items.count).to eq(2) # alice_poly and bob_poly
+
+        # Should not expose any tagging resources
+        tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+        expect(tagging_items).to be_empty
+      end
+    end
+
+    context 'Complex scenarios without join table exposure' do
+      it 'handles multiple polymorphic includes across different resource types' do
+        result = JPie::Serializer.new(PostResource).serialize([ruby_post_poly, rails_post_poly], {}, includes: ['tags', 'comments.tags', 'user'])
+
+        expect(result[:included]).to be_present
+
+        # Verify all expected types are included
+        included_types = result[:included].map { |item| item[:type] }.uniq.sort
+        expect(included_types).to contain_exactly('comments', 'tags', 'users')
+
+        # Verify we have all the tags from both posts and their comments
+        tag_items = result[:included].select { |item| item[:type] == 'tags' }
+        tag_names = tag_items.map { |tag| tag[:attributes]['name'] }.sort
+        expect(tag_names).to include('ruby_poly')
+
+        # Should not expose any tagging resources
+        tagging_items = result[:included].select { |item| item[:type] == 'taggings' }
+        expect(tagging_items).to be_empty
+      end
+    end
+  end
 end
