@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require 'spec_helper'
 
 RSpec.describe 'JPie Through Associations CRUD Handling', type: :request do
   # Test models for through associations

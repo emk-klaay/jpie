@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require 'rails_helper'
+require 'spec_helper'
 
 RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
   let!(:user) { User.create!(name: 'Test User', email: 'test@example.com') }

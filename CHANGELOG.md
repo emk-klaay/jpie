@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2025-01-25
+
+### Fixed
+- **Test Suite Stability**: Fixed require statements in spec files that were incorrectly requiring `rails_helper` instead of `spec_helper`
+  - Fixed `spec/jpie/automatic_crud_spec.rb`
+  - Fixed `spec/jpie/polymorphic_crud_spec.rb` 
+  - Fixed `spec/jpie/through_associations_crud_spec.rb`
+- **Code Quality**: Addressed RuboCop warnings and improved code style compliance
+- **Error Handling**: Improved error message consistency for unsupported sort fields and include parameters
+
+### Enhanced
+- **Test Coverage**: Maintained high test coverage (93.39%) with improved test reliability
+- **Documentation**: Updated gem publishing workflow and development guidelines
+
+### Technical Details
+- All spec files now correctly use `spec_helper` for consistent test environment setup
+- Improved gem build process with proper dependency management
+- Enhanced RuboCop configuration for better code quality enforcement
+
 ## [0.4.0] - 2025-01-25
 
 ### Added
