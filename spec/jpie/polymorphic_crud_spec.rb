@@ -26,12 +26,12 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
           }
         }
 
-        post "/posts/#{post.id}/comments", 
+        post "/posts/#{post.id}/comments",
              params: comment_params.to_json,
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:created)
-        
+
         response_data = JSON.parse(response.body)
         comment_id = response_data['data']['id']
         comment = Comment.find(comment_id)
@@ -40,10 +40,10 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
         expect(comment.commentable).to eq(post)
         expect(comment.commentable_type).to eq('Post')
         expect(comment.commentable_id).to eq(post.id)
-        
+
         # Verify author was set automatically from current_user
         expect(comment.author).to eq(user)
-        
+
         # Verify response format
         expect(response_data['data']['attributes']['content']).to eq('Great post!')
       end
@@ -65,7 +65,7 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:created)
-        
+
         comment = Comment.last
         expect(comment.commentable).to eq(article)
         expect(comment.commentable_type).to eq('Article')
@@ -89,7 +89,7 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:created)
-        
+
         comment = Comment.last
         expect(comment.commentable).to eq(video)
         expect(comment.commentable_type).to eq('Video')
@@ -117,7 +117,7 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
             headers: { 'Content-Type' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:ok)
-      
+
       comment.reload
       expect(comment.content).to eq('Updated content')
       # Polymorphic associations should remain unchanged
@@ -144,7 +144,7 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:created)
-        
+
         new_post = Post.last
         expect(new_post.author).to eq(user)
         expect(new_post.title).to eq('New Post')
@@ -168,7 +168,7 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:created)
-        
+
         new_article = Article.last
         expect(new_article.author).to eq(user)
         expect(new_article.title).to eq('New Article')
@@ -192,7 +192,7 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:created)
-        
+
         new_video = Video.last
         expect(new_video.author).to eq(user)
         expect(new_video.title).to eq('New Video')
@@ -209,18 +209,18 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
           headers: { 'Accept' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:ok)
-      
+
       response_data = JSON.parse(response.body)
-      
+
       # Check main resource
       expect(response_data['data']['id']).to eq(post.id.to_s)
       expect(response_data['data']['type']).to eq('posts')
-      
+
       # Check included comments
       included_comments = response_data['included'].select { |r| r['type'] == 'comments' }
       expect(included_comments.size).to eq(1)
       expect(included_comments.first['attributes']['content']).to eq('Comment 1')
-      
+
       # Check included authors
       included_authors = response_data['included'].select { |r| r['type'] == 'users' }
       expect(included_authors.size).to eq(1)
@@ -232,7 +232,7 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
           headers: { 'Accept' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:ok)
-      
+
       response_data = JSON.parse(response.body)
       included_comments = response_data['included'].select { |r| r['type'] == 'comments' }
       expect(included_comments.size).to eq(1)
@@ -257,7 +257,7 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:unprocessable_entity)
-        
+
         response_data = JSON.parse(response.body)
         expect(response_data['errors']).to be_present
       end
@@ -274,7 +274,7 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
           }
         }
 
-        post "/posts/99999/comments",
+        post '/posts/99999/comments',
              params: comment_params.to_json,
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
@@ -287,10 +287,10 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
     let!(:comment) { Comment.create!(content: 'To be deleted', commentable: post, author: user) }
 
     it 'deletes polymorphic comment successfully' do
-      expect {
+      expect do
         delete "/comments/#{comment.id}",
                headers: { 'Accept' => 'application/vnd.api+json' }
-      }.to change(Comment, :count).by(-1)
+      end.to change(Comment, :count).by(-1)
 
       expect(response).to have_http_status(:no_content)
     end
@@ -307,14 +307,14 @@ RSpec.describe 'JPie Polymorphic CRUD Handling', type: :request do
             headers: { 'Accept' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:ok)
-        
+
         response_data = JSON.parse(response.body)
         expect(response_data['data'].size).to eq(3)
-        
+
         # Verify all comment types are included
         contents = response_data['data'].map { |c| c['attributes']['content'] }
         expect(contents).to include('Post comment', 'Article comment', 'Video comment')
       end
     end
   end
-end 
+end

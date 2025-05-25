@@ -26,40 +26,26 @@ end
 ### 2. Resource with All Meta Field Configuration Types 
 ```ruby
 class ArticleResource < JPie::Resource
-  # Regular attributes
-  attributes :title, :content, :status
-  
-  # 1. Basic meta attributes - direct model attribute access
-  meta_attributes :created_at, :updated_at, :published_at
-  
-  # 2. Multiple meta attributes at once
-  meta_attributes :author_id, :view_count
-  
-  # 3. Single meta attribute with custom method
+  # 1. Basic meta attributes - direct model access and custom methods
+  meta_attributes :created_at, :updated_at
   meta_attribute :reading_time
   
-  # 4. Meta attribute with block (legacy style)
+  # 2. Meta attribute with attr mapping (maps to different model attribute)
+  meta_attribute :author_name, attr: :author_email
+  
+  # 3. Meta attribute with block (legacy style)
   meta_attribute :word_count do
     object.word_count
   end
   
-  # 5. Meta attribute with proc block (alternative legacy style)
+  # 4. Meta attribute with proc block (alternative legacy style)
   meta_attribute :character_count, block: proc { object.content.length }
   
-  # 6. Meta attribute with attr mapping (maps to different model attribute)
-  meta_attribute :author_name, attr: :author_email
-  
-  # 7. Meta attribute accessing context
-  meta_attribute :user_role
-  
-  # 8. Meta attribute with conditional logic
-  meta_attribute :edit_permissions
-  
-  # 9. Short alias syntax (modern style)
+  # 5. Short alias syntax (modern style)
   meta :api_version
   metas :request_id, :cache_key
   
-  # 10. Custom meta method for dynamic metadata
+  # 6. Custom meta method for dynamic metadata
   def meta
     # Start with declared meta attributes
     base_meta = super
@@ -154,18 +140,13 @@ Content-Type: application/vnd.api+json
     "meta": {
       "created_at": "2024-01-15T10:30:00Z",
       "updated_at": "2024-01-15T10:30:00Z",
-      "published_at": null,
-      "author_id": 123,
-      "view_count": 0,
       "reading_time": {
         "minutes": 3,
         "formatted": "3 min read"
       },
+      "author_name": "john@example.com",
       "word_count": 450,
       "character_count": 2700,
-      "author_name": "john@example.com",
-      "user_role": "editor",
-      "edit_permissions": true,
       "api_version": "1.0",
       "request_id": "req_abc123def456",
       "cache_key": "article:1:1705492800",
@@ -207,22 +188,17 @@ Content-Type: application/vnd.api+json
     "meta": {
       "created_at": "2024-01-15T10:30:00Z",
       "updated_at": "2024-01-16T14:20:00Z",
-      "published_at": "2024-01-16T09:00:00Z",
-      "author_id": 123,
-      "view_count": 1547,
       "reading_time": {
         "minutes": 3,
         "formatted": "3 min read"
       },
+      "author_name": "john@example.com",
       "word_count": 450,
       "character_count": 2700,
-      "author_name": "john@example.com",
-      "user_role": "editor",
-      "edit_permissions": true,
       "api_version": "1.0",
       "request_id": "req_xyz789ghi012",
       "cache_key": "article:1:1705492800",
-      "timestamp": "2024-03-15T16:45:30Z",
+      "timestamp": "2024-03-16T14:20:00Z",
       "resource_version": "2.1"
     }
   }
@@ -250,22 +226,17 @@ Content-Type: application/vnd.api+json
     "meta": {
       "created_at": "2024-01-15T10:30:00Z",
       "updated_at": "2024-01-16T14:20:00Z",
-      "published_at": "2024-01-16T09:00:00Z",
-      "author_id": 123,
-      "view_count": 1547,
       "reading_time": {
         "minutes": 3,
         "formatted": "3 min read"
       },
+      "author_name": "john@example.com",
       "word_count": 450,
       "character_count": 2700,
-      "author_name": "john@example.com",
-      "user_role": "editor",
-      "edit_permissions": true,
       "api_version": "1.0",
       "request_id": "req_abc123def456",
       "cache_key": "article:1:1705492800",
-      "timestamp": "2024-03-15T16:45:30Z",
+      "timestamp": "2024-03-16T14:20:00Z",
       "resource_version": "2.1"
     }
   }

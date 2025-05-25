@@ -167,8 +167,8 @@ RSpec.describe 'Through Association Support' do
           has_one :profile, class_name: 'Driver2Profile', foreign_key: 'driver2_id'
         end
 
-        profile1 = Driver2Profile.create!(driver2: driver1, bio: 'Experienced driver')
-        profile2 = Driver2Profile.create!(driver2: driver2, bio: 'Safe driver')
+        Driver2Profile.create!(driver2: driver1, bio: 'Experienced driver')
+        Driver2Profile.create!(driver2: driver2, bio: 'Safe driver')
 
         # Add profile resource class
         profile_resource_class = Class.new(JPie::Resource) do
@@ -304,4 +304,4 @@ RSpec.describe 'Through Association Support' do
       expect(operators).to include(driver1, driver2)
     end
   end
-end 
+end

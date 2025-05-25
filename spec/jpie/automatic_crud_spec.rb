@@ -28,10 +28,10 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:created)
-        
+
         response_data = JSON.parse(response.body)
         created_post = Post.find(response_data['data']['id'])
-        
+
         # Author should be automatically assigned from current_user
         expect(created_post.author).to eq(user)
         expect(created_post.title).to eq('Auto-assigned Post')
@@ -55,7 +55,7 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:created)
-        
+
         created_article = Article.last
         expect(created_article.author).to eq(user)
         expect(created_article.title).to eq('Auto-assigned Article')
@@ -79,7 +79,7 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:created)
-        
+
         created_video = Video.last
         expect(created_video.author).to eq(user)
         expect(created_video.title).to eq('Auto-assigned Video')
@@ -97,7 +97,7 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
             headers: { 'Accept' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:ok)
-        
+
         response_data = JSON.parse(response.body)
         expect(response_data['data']['id']).to eq(post.id.to_s)
         expect(response_data['data']['type']).to eq('posts')
@@ -109,7 +109,7 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
             headers: { 'Accept' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:ok)
-        
+
         response_data = JSON.parse(response.body)
         expect(response_data['data']).to be_an(Array)
         expect(response_data['data'].size).to be >= 1
@@ -120,7 +120,7 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
             headers: { 'Accept' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:ok)
-        
+
         response_data = JSON.parse(response.body)
         included_users = response_data['included'].select { |r| r['type'] == 'users' }
         expect(included_users.size).to eq(1)
@@ -146,7 +146,7 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
               headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:ok)
-        
+
         post.reload
         expect(post.title).to eq('Updated Title')
         expect(post.content).to eq('Updated content')
@@ -170,7 +170,7 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
               headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:ok)
-        
+
         article.reload
         expect(article.title).to eq('Updated Article Title')
         expect(article.author).to eq(user)
@@ -179,19 +179,19 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
 
     describe 'DELETE operations' do
       it 'deletes post successfully' do
-        expect {
+        expect do
           delete "/posts/#{post.id}",
                  headers: { 'Accept' => 'application/vnd.api+json' }
-        }.to change(Post, :count).by(-1)
+        end.to change(Post, :count).by(-1)
 
         expect(response).to have_http_status(:no_content)
       end
 
       it 'deletes article successfully' do
-        expect {
+        expect do
           delete "/articles/#{article.id}",
                  headers: { 'Accept' => 'application/vnd.api+json' }
-        }.to change(Article, :count).by(-1)
+        end.to change(Article, :count).by(-1)
 
         expect(response).to have_http_status(:no_content)
       end
@@ -215,10 +215,10 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
            headers: { 'Content-Type' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:unprocessable_entity)
-      
+
       response_data = JSON.parse(response.body)
       expect(response_data['errors']).to be_present
-      
+
       # Should contain validation error for title
       title_errors = response_data['errors'].select { |e| e['source']&.dig('pointer') == '/data/attributes/title' }
       expect(title_errors).to be_present
@@ -240,7 +240,7 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
            headers: { 'Content-Type' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:unprocessable_entity)
-      
+
       response_data = JSON.parse(response.body)
       expect(response_data['errors']).to be_present
     end
@@ -255,7 +255,7 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
           headers: { 'Accept' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:ok)
-      
+
       response_data = JSON.parse(response.body)
       titles = response_data['data'].map { |p| p['attributes']['title'] }
       expect(titles).to eq(titles.sort)
@@ -266,7 +266,7 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
           headers: { 'Accept' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:ok)
-      
+
       response_data = JSON.parse(response.body)
       titles = response_data['data'].map { |p| p['attributes']['title'] }
       expect(titles).to eq(titles.sort.reverse)
@@ -286,7 +286,7 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
           headers: { 'Accept' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:ok)
-      
+
       response_data = JSON.parse(response.body)
       expect(response_data['data'].size).to eq(5)
       expect(response_data['meta']).to include('pagination')
@@ -299,7 +299,7 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
           headers: { 'Accept' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:not_found)
-      
+
       response_data = JSON.parse(response.body)
       expect(response_data['errors']).to be_present
     end
@@ -361,4 +361,4 @@ RSpec.describe 'JPie Automatic CRUD Handling', type: :request do
       expect(response).to have_http_status(:created)
     end
   end
-end 
+end

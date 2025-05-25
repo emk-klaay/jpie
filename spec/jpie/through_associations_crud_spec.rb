@@ -30,12 +30,12 @@ RSpec.describe 'JPie Through Associations CRUD Handling', type: :request do
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:created)
-        
+
         # Verify the join record was created
         car_driver = CarDriver.last
         expect(car_driver.car).to eq(car)
         expect(car_driver.driver).to eq(driver)
-        
+
         # Verify through associations work
         expect(car.drivers).to include(driver)
         expect(driver.cars).to include(car)
@@ -61,7 +61,7 @@ RSpec.describe 'JPie Through Associations CRUD Handling', type: :request do
              headers: { 'Content-Type' => 'application/vnd.api+json' }
 
         expect(response).to have_http_status(:created)
-        
+
         car_driver = CarDriver.last
         expect(car_driver.car).to eq(car)
         expect(car_driver.driver).to eq(driver)
@@ -77,19 +77,19 @@ RSpec.describe 'JPie Through Associations CRUD Handling', type: :request do
           headers: { 'Accept' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:ok)
-      
+
       response_data = JSON.parse(response.body)
-      
+
       # Check main resource
       expect(response_data['data']['id']).to eq(car.id.to_s)
       expect(response_data['data']['type']).to eq('cars')
-      
+
       # Check included drivers (through association)
       included_drivers = response_data['included'].select { |r| r['type'] == 'drivers' }
       expect(included_drivers.size).to eq(1)
       expect(included_drivers.first['id']).to eq(driver.id.to_s)
       expect(included_drivers.first['attributes']['name']).to eq('John Doe')
-      
+
       # Join table should NOT be exposed in the API
       car_drivers = response_data['included'].select { |r| r['type'] == 'car_drivers' }
       expect(car_drivers).to be_empty
@@ -100,7 +100,7 @@ RSpec.describe 'JPie Through Associations CRUD Handling', type: :request do
           headers: { 'Accept' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:ok)
-      
+
       response_data = JSON.parse(response.body)
       included_cars = response_data['included'].select { |r| r['type'] == 'cars' }
       expect(included_cars.size).to eq(1)
@@ -129,7 +129,7 @@ RSpec.describe 'JPie Through Associations CRUD Handling', type: :request do
             headers: { 'Content-Type' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:ok)
-      
+
       # Associations should remain intact
       car_driver.reload
       expect(car_driver.car).to eq(car)
@@ -141,13 +141,13 @@ RSpec.describe 'JPie Through Associations CRUD Handling', type: :request do
     let!(:car_driver) { CarDriver.create!(car: car, driver: driver) }
 
     it 'removes through association by deleting join record' do
-      expect {
+      expect do
         delete "/car_drivers/#{car_driver.id}",
                headers: { 'Accept' => 'application/vnd.api+json' }
-      }.to change(CarDriver, :count).by(-1)
+      end.to change(CarDriver, :count).by(-1)
 
       expect(response).to have_http_status(:no_content)
-      
+
       # Through associations should be removed
       car.reload
       driver.reload
@@ -156,10 +156,10 @@ RSpec.describe 'JPie Through Associations CRUD Handling', type: :request do
     end
 
     it 'removes association via nested route' do
-      expect {
+      expect do
         delete "/cars/#{car.id}/car_drivers/#{car_driver.id}",
                headers: { 'Accept' => 'application/vnd.api+json' }
-      }.to change(CarDriver, :count).by(-1)
+      end.to change(CarDriver, :count).by(-1)
 
       expect(response).to have_http_status(:no_content)
     end
@@ -175,11 +175,11 @@ RSpec.describe 'JPie Through Associations CRUD Handling', type: :request do
           headers: { 'Accept' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:ok)
-      
+
       response_data = JSON.parse(response.body)
       included_drivers = response_data['included'].select { |r| r['type'] == 'drivers' }
       expect(included_drivers.size).to eq(2)
-      
+
       driver_names = included_drivers.map { |d| d['attributes']['name'] }
       expect(driver_names).to include('John Doe', 'Jane Smith')
     end
@@ -234,7 +234,7 @@ RSpec.describe 'JPie Through Associations CRUD Handling', type: :request do
   describe 'Error Handling for Through Associations' do
     it 'returns validation error for duplicate car-driver relationship' do
       CarDriver.create!(car: car, driver: driver)
-      
+
       duplicate_params = {
         data: {
           type: 'car_drivers',
@@ -251,7 +251,7 @@ RSpec.describe 'JPie Through Associations CRUD Handling', type: :request do
            headers: { 'Content-Type' => 'application/vnd.api+json' }
 
       expect(response).to have_http_status(:unprocessable_entity)
-      
+
       response_data = JSON.parse(response.body)
       expect(response_data['errors']).to be_present
     end
@@ -274,4 +274,4 @@ RSpec.describe 'JPie Through Associations CRUD Handling', type: :request do
       expect(response).to have_http_status(:not_found)
     end
   end
-end 
+end
