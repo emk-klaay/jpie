@@ -1,5 +1,16 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# Testing Guidelines
+
+- Write RSpec tests for all new features
+- Maintain test coverage for all public methods
+- Use meaningful test descriptions
+- Follow the existing test structure in spec/
+- Test both success and error cases
+- Use modern RSpec features and syntax
+- Don't reduce test coverage (line, file, branch, or other)
+- Only care about coverage reduction when running all specs
+- Do not add any functionality for new features to existing tests unless absolutely necessary

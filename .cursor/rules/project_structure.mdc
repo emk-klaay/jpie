@@ -1,5 +1,30 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# Project Information
+- Project Name: jpie
+- Description: Ruby gem for JSON:API implementation
+
+# Project Structure
+
+## Core Structure
+- Keep core functionality in lib/jpie/
+- Place tests in spec/jpie/
+- Use proper namespacing (JPie module)
+- Follow Ruby gem best practices
+
+## Protected Files
+- Do not update spec/jpie/database.rb unless absolutely necessary
+- Do not update spec/jpie/resources.rb unless absolutely necessary
+
+## Documentation
+- Keep README.md up to date with installation and usage instructions
+- Include example usage in documentation
+
+## Development Process
+- Always read the .aiconfig file
+- Always implement code slowly and methodically
+- Always test as you go
+- Always make sure rubocop passes

@@ -1,5 +1,14 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# Git Commit Guidelines
+
+- Write clear, descriptive commit messages
+- Keep commits focused and atomic
+- Run and pass tests before committing
+- Update documentation in the same commit as code changes
+- Ignore spec/examples.txt and other files listed in .gitignore
+- Include Ruby/Rails version requirements in relevant commits
+- Update tests in the same commit as code changes

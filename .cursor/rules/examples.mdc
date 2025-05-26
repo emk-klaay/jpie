@@ -1,5 +1,16 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# Example Guidelines
+
+- Examples must only include required code
+- Examples must not include any unrelated or superfluous code
+- Examples must be a single markdown file
+- Examples must use the `http` code blocks for examples
+- Examples must only include the minimum number of examples
+- Examples must never include migrations
+- Examples must not include a features section or similar
+- Examples must include an introduction to the example
+- Examples live in /examples/*.md

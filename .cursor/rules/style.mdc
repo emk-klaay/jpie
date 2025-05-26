@@ -1,5 +1,15 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# Style Guidelines
+
+## Ruby Style
+- Follow Ruby style guide and RuboCop rules defined in .rubocop.yml
+- Prefer rubocop autocorrect 
+- Always pass rubocop before committing to git
+- Use `{data:}` rather than `{data: data}`
+- Only use code comments when absolutely necessary
+- Keep any code comments short and concise
+- Don't update .rubocop.yml unless absolutely necessary

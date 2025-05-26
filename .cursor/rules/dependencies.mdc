@@ -1,5 +1,19 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# Dependency Management
+
+## Requirements
+- Keep dependencies minimal and justified
+- Document new dependencies in README.md
+- Keep development dependencies in Gemfile
+- Ensure compatibility with Ruby 3.4+
+- Only support Rails 8+ features
+- Use modern gem versions
+
+## Compatibility Requirements
+- Maintain Ruby 3.4+ compatibility
+- Support Rails 8+ integration
+- Follow JSON:API specification strictly
