@@ -8,6 +8,9 @@ RSpec.describe JPie::Controller::RelationshipValidation do
   let(:user) { User.create!(name: 'Test User', email: 'test@example.com') }
   let(:post) { Post.create!(title: 'Test Post', content: 'Content', user:) }
   let(:tag) { Tag.create!(name: 'Test Tag') }
+  let(:content_type) { 'application/vnd.api+json' }
+  let(:request_body) { '{}' }
+  let(:params) { { id: post.id } }
 
   before do
     controller.params = params
@@ -15,10 +18,6 @@ RSpec.describe JPie::Controller::RelationshipValidation do
     controller.request.body = request_body
     controller.request.method = request_method if defined?(request_method)
   end
-
-  let(:content_type) { 'application/vnd.api+json' }
-  let(:request_body) { '{}' }
-  let(:params) { { id: post.id } }
 
   describe '#validate_relationship_exists' do
     context 'when relationship exists' do

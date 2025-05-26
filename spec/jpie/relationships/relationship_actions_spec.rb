@@ -11,6 +11,9 @@ RSpec.describe JPie::Controller::RelationshipActions do
   let(:reply2) { Post.create!(title: 'Reply 2', content: 'Reply 2', parent_post: post) }
   let(:tag1) { Tag.create!(name: 'Tag 1') }
   let(:tag2) { Tag.create!(name: 'Tag 2') }
+  let(:content_type) { 'application/vnd.api+json' }
+  let(:request_body) { '{}' }
+  let(:params) { { id: post.id } }
 
   before do
     controller.params = params
@@ -18,10 +21,6 @@ RSpec.describe JPie::Controller::RelationshipActions do
     controller.request.body = request_body
     controller.request.method = request_method if defined?(request_method)
   end
-
-  let(:content_type) { 'application/vnd.api+json' }
-  let(:request_body) { '{}' }
-  let(:params) { { id: post.id } }
 
   describe '#relationship_show' do
     let(:params) { { id: post.id, relationship_name: relationship_name } }
