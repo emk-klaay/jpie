@@ -80,3 +80,98 @@
 - Examples must not include a features section or similar
 - Examples must include an introduction to the example
 - Examples live in /examples/*.md
+
+project:
+  name: jpie
+  description: Ruby gem for JSON:API implementation
+
+style_guide:
+  ruby:
+    - Follow Ruby style guide and RuboCop rules defined in .rubocop.yml
+    - Prefer rubocop autocorrect
+    - Always pass rubocop before committing to git
+    - Use `{data:}` rather than `{data: data}`
+    - Only use code comments when absolutely necessary
+    - Keep any code comments short and concise
+    - Don't update .rubocop.yml unless absolutely necessary
+
+documentation:
+  requirements:
+    - Keep README.md up to date with installation and usage instructions
+    - Include example usage in documentation
+
+testing:
+  requirements:
+    - Write RSpec tests for all new features
+    - Maintain test coverage for all public methods
+    - Use meaningful test descriptions
+    - Follow the existing test structure in spec/
+    - Test both success and error cases
+    - Use modern RSpec features and syntax
+    - Don't reduce test coverage (line, file, branch, or other)
+    - Only care about coverage reduction when running all specs
+
+git:
+  commit_guidelines:
+    - Write clear, descriptive commit messages
+    - Keep commits focused and atomic
+    - Run and pass tests before committing
+    - Update documentation in the same commit as code changes
+    - Ignore spec/examples.txt and other files listed in .gitignore
+    - Include Ruby/Rails version requirements in relevant commits
+    - Update tests in the same commit as code changes
+
+project_structure:
+  core:
+    - Keep core functionality in lib/jpie/
+    - Place tests in spec/jpie/
+    - Use proper namespacing (JPie module)
+    - Follow Ruby gem best practices
+  protected_files:
+    - spec/jpie/database.rb
+    - spec/jpie/resources.rb
+
+dependencies:
+  requirements:
+    - Keep dependencies minimal and justified
+    - Document new dependencies in README.md
+    - Keep development dependencies in Gemfile
+    - Ensure compatibility with Ruby 3.4+
+    - Only support Rails 8+ features
+    - Use modern gem versions
+
+security:
+  guidelines:
+    - Never commit sensitive data or credentials
+    - Use environment variables for configuration
+    - Follow secure coding practices
+    - Keep dependencies up to date
+    - Follow Rails 8+ security best practices
+    - Use Ruby 3.4+ security features
+    - Implement proper input validation
+
+compatibility:
+  requirements:
+    - Maintain Ruby 3.4+ compatibility
+    - Support Rails 8+ integration
+    - Follow JSON:API specification strictly
+
+development:
+  process:
+    - Always read the .aiconfig file
+    - Always implement code slowly and methodically
+    - Always test as you go
+    - Always make sure rubocop passes
+    - Do not add any functionality for new features to existing tests unless absolutely necessary
+
+examples:
+  guidelines:
+    - Examples must only include required code
+    - Examples must not include any unrelated or superfluous code
+    - Examples must be a single markdown file
+    - Examples must use the `http` code blocks for examples
+    - Examples must only include the minimum number of examples
+    - Examples must never include migrations
+    - Examples must not include a features section or similar
+    - Examples must include an introduction to the example
+    - Examples live in /examples/*.md
