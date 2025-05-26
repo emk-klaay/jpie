@@ -27,6 +27,57 @@ Add JPie to your Rails application:
 bundle add jpie
 ```
 
+## Development Setup
+
+This project uses [Overcommit](https://github.com/sds/overcommit) to enforce code quality through Git hooks. After cloning the repository:
+
+### 1. Install Dependencies
+
+```bash
+bundle install
+```
+
+### 2. Install Git Hooks
+
+```bash
+# Install overcommit globally (one-time setup)
+gem install overcommit
+
+# Install the Git hooks for this project
+overcommit --install
+
+# Sign the configuration (required for security)
+overcommit --sign
+```
+
+### 3. Automated Quality Checks
+
+The following checks run automatically:
+
+**Pre-commit hooks:**
+- ✅ **RuboCop** - Code style and quality analysis
+- ✅ **Trailing whitespace** - Prevents whitespace issues
+- ✅ **Merge conflicts** - Catches unresolved conflicts
+
+**Pre-push hooks:**
+- ✅ **RSpec** - Full test suite execution
+
+### 4. Manual Quality Checks
+
+You can run these checks manually:
+
+```bash
+# Run RuboCop with auto-fix
+bundle exec rubocop -A
+
+# Run tests
+bundle exec rspec
+
+# Test hooks without committing
+overcommit --run pre-commit
+overcommit --run pre-push
+```
+
 ## Quick Start
 
 JPie works out of the box with minimal configuration:
