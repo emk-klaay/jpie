@@ -8,6 +8,7 @@ gem 'rake', '~> 13.0'
 
 group :development, :test do
   gem 'brakeman', '~> 6.0'
+  gem 'overcommit', '~> 0.67', require: false
   gem 'rspec', '~> 3.12'
   gem 'rspec-rails', '~> 7.0'
   gem 'rubocop', '~> 1.50'
