@@ -4,82 +4,42 @@ This example demonstrates how to use the `jpie_resources` routing helper to auto
 
 ## Setup
 
-### 1. Models
+### 1. Model
 ```ruby
 # app/models/article.rb
 class Article < ActiveRecord::Base
   validates :title, presence: true
-  validates :content, presence: true
-  belongs_to :author, class_name: 'User'
-  has_many :comments
-end
-
-# app/models/user.rb  
-class User < ActiveRecord::Base
-  has_many :articles, foreign_key: 'author_id'
-end
-
-# app/models/comment.rb
-class Comment < ActiveRecord::Base
-  belongs_to :article
   belongs_to :author, class_name: 'User'
 end
 ```
 
-### 2. Resources
+### 2. Resource
 ```ruby
 # app/resources/article_resource.rb
 class ArticleResource < JPie::Resource
-  attributes :title, :content, :published_at
-  belongs_to :author, class_name: 'UserResource'
-  has_many :comments
-end
-
-# app/resources/user_resource.rb
-class UserResource < JPie::Resource
-  attributes :name, :email
-end
-
-# app/resources/comment_resource.rb
-class CommentResource < JPie::Resource
-  attributes :body, :created_at
-  belongs_to :article
+  attributes :title, :content
   belongs_to :author, class_name: 'UserResource'
 end
 ```
 
-### 3. Controllers
+### 3. Controller
 ```ruby
 # app/controllers/articles_controller.rb
 class ArticlesController < ApplicationController
   include JPie::Controller
-end
-
-# app/controllers/relationships_controller.rb
-class RelationshipsController < ApplicationController
-  include JPie::Controller
-  # Handles relationship management for JSON:API
-end
-
-# app/controllers/related_controller.rb
-class RelatedController < ApplicationController
-  include JPie::Controller
-  # Handles fetching related resources
 end
 ```
 
 ### 4. Routes (`config/routes.rb`)
 ```ruby
 Rails.application.routes.draw do
-  # Use jpie_resources instead of resources for JSON:API routes
+  # Flat configuration - full JSON:API routes
   jpie_resources :articles
-  jpie_resources :users
-  jpie_resources :comments
   
-  # You can also use it with options
+  # Limited configuration - only specific actions
   jpie_resources :posts, only: %i[index show]
   
-  # And with nested routes
+  # Nested configuration - hierarchical resources
   jpie_resources :categories do
     jpie_resources :articles
   end
@@ -129,8 +89,7 @@ Content-Type: application/vnd.api+json
       "type": "articles",
       "attributes": {
         "title": "First Article",
-        "content": "Content of first article",
-        "published_at": "2024-01-01T10:00:00Z"
+        "content": "Content of first article"
       },
       "relationships": {
         "author": {
@@ -145,47 +104,6 @@ Content-Type: application/vnd.api+json
 }
 ```
 
-### Get Article with Relationships
-```http
-GET /articles/1?include=author,comments
-Accept: application/vnd.api+json
-
-HTTP/1.1 200 OK
-Content-Type: application/vnd.api+json
-
-{
-  "data": {
-    "id": "1",
-    "type": "articles",
-    "attributes": {
-      "title": "First Article",
-      "content": "Content of first article"
-    },
-    "relationships": {
-      "author": {
-        "data": { "type": "users", "id": "1" }
-      },
-      "comments": {
-        "data": [
-          { "type": "comments", "id": "1" },
-          { "type": "comments", "id": "2" }
-        ]
-      }
-    }
-  },
-  "included": [
-    {
-      "id": "1",
-      "type": "users",
-      "attributes": {
-        "name": "John Doe",
-        "email": "john@example.com"
-      }
-    }
-  ]
-}
-```
-
 ### Update Article Relationship
 ```http
 PATCH /articles/1/relationships/author
@@ -193,19 +111,6 @@ Content-Type: application/vnd.api+json
 
 {
   "data": { "type": "users", "id": "2" }
-}
-```
-
-### Add Comments to Article
-```http
-POST /articles/1/relationships/comments
-Content-Type: application/vnd.api+json
-
-{
-  "data": [
-    { "type": "comments", "id": "5" },
-    { "type": "comments", "id": "6" }
-  ]
 }
 ```
 
