@@ -29,6 +29,30 @@ RSpec.describe JPie::Routing do
       expect(index_route.requirements[:format]).to eq(:json)
     end
 
+    it 'creates JSON:API relationship routes' do
+      mapper.jpie_resources :posts
+
+      # Check for relationship routes (e.g., /posts/:id/relationships/*)
+      relationship_routes = routes.routes.select do |route|
+        route.path.spec.to_s.include?('/posts/:id/relationships/')
+      end
+      expect(relationship_routes).not_to be_empty
+
+      # Should have GET, PATCH, POST, DELETE for relationships
+      relationship_verbs = relationship_routes.map(&:verb).uniq.sort
+      expect(relationship_verbs).to include('GET', 'PATCH', 'POST', 'DELETE')
+
+      # Check for related resource routes (e.g., /posts/:id/*)
+      related_routes = routes.routes.select do |route|
+        route.path.spec.to_s.match?(%r{/posts/:id/[^/]+$}) && route.path.spec.to_s.exclude?('relationships')
+      end
+      expect(related_routes).not_to be_empty
+
+      # Related routes should only have GET
+      related_verbs = related_routes.map(&:verb).uniq
+      expect(related_verbs).to eq(['GET'])
+    end
+
     it 'accepts additional options' do
       mapper.jpie_resources :posts, only: %i[index show]
 
@@ -64,6 +88,17 @@ RSpec.describe JPie::Routing do
       comment_route = comment_routes.first
       expect(comment_route.requirements[:format]).to eq(:json)
       expect(comment_route.defaults[:format]).to eq(:json)
+
+      # Verify that both parent and nested resources have relationship routes
+      post_relationship_routes = routes.routes.select do |route|
+        route.path.spec.to_s.include?('/posts/:id/relationships/')
+      end
+      expect(post_relationship_routes).not_to be_empty
+
+      comment_relationship_routes = routes.routes.select do |route|
+        route.path.spec.to_s.include?('/comments/:id/relationships/')
+      end
+      expect(comment_relationship_routes).not_to be_empty
     end
 
     it 'allows overriding default options' do
