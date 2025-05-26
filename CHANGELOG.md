@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2025-01-25
+
+### Added
+- **Pagination Example**: Comprehensive pagination example demonstrating both simple and JSON:API standard pagination formats
+  - Simple pagination parameters (`page`, `per_page`)
+  - JSON:API standard pagination format (`page[number]`, `page[size]`)
+  - Pagination combined with sorting functionality
+  - Edge cases including last page and empty results
+  - Complete HTTP request/response examples following project format
+
+### Enhanced
+- **Documentation**: Improved example coverage with detailed pagination use cases
+- **Developer Experience**: Clear examples for implementing pagination in JPie applications
+
 ## [0.4.1] - 2025-01-25
 
 ### Fixed
