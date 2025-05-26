@@ -1,0 +1,35 @@
+# Use this file to configure the Overcommit hooks you wish to use. This will
+# extend the default configuration defined in:
+# https://github.com/sds/overcommit/blob/master/config/default.yml
+
+# Global settings
+verify_signatures: false
+
+PreCommit:
+  ALL:
+    problem_on_unmodified_line: ignore
+    requires_files: true
+    quiet: false
+
+  # Run RuboCop on Ruby files before commit
+  RuboCop:
+    enabled: true
+    command: ['bundle', 'exec', 'rubocop']
+    flags: ['--force-exclusion']
+    on_warn: fail
+
+  # Check for trailing whitespace
+  TrailingWhitespace:
+    enabled: true
+    exclude:
+      - '**/*.md'
+
+  # Check for merge conflicts
+  MergeConflicts:
+    enabled: true
+
+PrePush:
+  # Run RSpec tests before push
+  RSpec:
+    enabled: true
+    command: ['bundle', 'exec', 'rspec']
