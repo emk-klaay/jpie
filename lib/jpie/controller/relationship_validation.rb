@@ -19,6 +19,7 @@ module JPie
       def validate_relationship_update_request
         validate_content_type
         validate_request_body
+        validate_relationship_type
       end
 
       def validate_content_type
@@ -45,13 +46,71 @@ module JPie
       end
 
       def validate_resource_identifier(resource_identifier)
-        return if resource_identifier.is_a?(Hash) &&
-                  resource_identifier.key?('type') &&
-                  resource_identifier.key?('id')
+        unless resource_identifier.is_a?(Hash) &&
+               resource_identifier.key?('type') &&
+               resource_identifier.key?('id')
+          raise JPie::Errors::BadRequestError.new(
+            detail: 'Resource identifier objects must have "type" and "id" members'
+          )
+        end
 
-        raise JPie::Errors::BadRequestError.new(
-          detail: 'Resource identifier objects must have "type" and "id" members'
-        )
+        type = resource_identifier['type']
+        id = resource_identifier['id']
+
+        unless type.is_a?(String) && id.is_a?(String)
+          raise JPie::Errors::BadRequestError.new(
+            detail: 'Resource identifier object members must be strings'
+          )
+        end
+
+        if type.empty? || id.empty?
+          raise JPie::Errors::BadRequestError.new(
+            detail: 'Resource identifier object members cannot be empty strings'
+          )
+        end
+      end
+
+      def validate_relationship_type
+        validate_relationship_exists
+        data = parse_relationship_data
+
+        if relationship_is_to_many?
+          validate_to_many_relationship_data(data)
+        else
+          validate_to_one_relationship_data(data)
+        end
+      end
+
+      def validate_to_many_relationship_data(data)
+        if data.nil?
+          raise JPie::Errors::BadRequestError.new(
+            detail: 'Cannot set a to-many relationship to null'
+          )
+        end
+
+        unless data.is_a?(Array)
+          raise JPie::Errors::BadRequestError.new(
+            detail: 'The value of data must be an array for to-many relationships'
+          )
+        end
+
+        data.each { |identifier| validate_resource_identifier(identifier) }
+      end
+
+      def validate_to_one_relationship_data(data)
+        unless data.nil? || data.is_a?(Hash)
+          raise JPie::Errors::BadRequestError.new(
+            detail: 'The value of data must be a single resource identifier object or null for to-one relationships'
+          )
+        end
+
+        validate_resource_identifier(data) if data
+      end
+
+      def relationship_is_to_many?
+        return false unless relationship_config
+
+        relationship_config[:type] == :has_many
       end
     end
   end

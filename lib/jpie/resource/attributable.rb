@@ -59,13 +59,13 @@ module JPie
         def has_many(name, options = {})
           name = name.to_sym
           resource_class_name = options[:resource] || infer_resource_class_name(name)
-          relationship(name, { resource: resource_class_name }.merge(options))
+          relationship(name, { type: :has_many, resource: resource_class_name }.merge(options))
         end
 
         def has_one(name, options = {})
           name = name.to_sym
           resource_class_name = options[:resource] || infer_resource_class_name(name)
-          relationship(name, { resource: resource_class_name }.merge(options))
+          relationship(name, { type: :has_one, resource: resource_class_name }.merge(options))
         end
 
         private

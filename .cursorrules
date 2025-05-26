@@ -22,6 +22,7 @@
 - Test both success and error cases
 - Use modern RSpec features and syntax
 - Don't reduce test coverage (line, file, branch, or other)
+- Only care about coverge reduction when running all specs
 
 # Git commit guidelines
 - Write clear, descriptive commit messages

@@ -24,7 +24,7 @@ module JPie
         validate_relationship_update_request
         resource = find_resource
         relationship_data = parse_relationship_data
-        update_relationship(resource, relationship_data)
+        update_relationship_data(resource, relationship_data)
         render_relationship_data(get_relationship_data(resource))
       end
 
@@ -34,7 +34,21 @@ module JPie
         validate_relationship_exists
         validate_relationship_update_request
         resource = find_resource
+
+        unless relationship_is_to_many?
+          raise JPie::Errors::BadRequestError.new(
+            detail: 'POST is only supported for to-many relationships'
+          )
+        end
+
         relationship_data = parse_relationship_data
+
+        unless relationship_data.is_a?(Array)
+          raise JPie::Errors::BadRequestError.new(
+            detail: 'Adding to relationships requires an array of resource identifier objects'
+          )
+        end
+
         add_to_relationship(resource, relationship_data)
         render_relationship_data(get_relationship_data(resource))
       end
@@ -45,7 +59,21 @@ module JPie
         validate_relationship_exists
         validate_relationship_update_request
         resource = find_resource
+
+        unless relationship_is_to_many?
+          raise JPie::Errors::BadRequestError.new(
+            detail: 'DELETE is only supported for to-many relationships'
+          )
+        end
+
         relationship_data = parse_relationship_data
+
+        unless relationship_data.is_a?(Array)
+          raise JPie::Errors::BadRequestError.new(
+            detail: 'Removing from relationships requires an array of resource identifier objects'
+          )
+        end
+
         remove_from_relationship(resource, relationship_data)
         render_relationship_data(get_relationship_data(resource))
       end
@@ -91,16 +119,34 @@ module JPie
         parsed_body['data']
       end
 
-      def update_relationship(resource, relationship_data)
+      def update_relationship_data(resource, relationship_data)
         if relationship_data.nil?
-          # Set relationship to null
-          clear_relationship(resource)
+          # Set relationship to null (only valid for to-one relationships)
+          unless relationship_is_to_many?
+            clear_relationship(resource)
+          else
+            raise JPie::Errors::BadRequestError.new(
+              detail: 'Cannot set a to-many relationship to null'
+            )
+          end
         elsif relationship_data.is_a?(Array)
           # to-many relationship - replace all
-          replace_to_many_relationship(resource, relationship_data)
+          if relationship_is_to_many?
+            replace_to_many_relationship(resource, relationship_data)
+          else
+            raise JPie::Errors::BadRequestError.new(
+              detail: 'Invalid data type for to-one relationship'
+            )
+          end
         elsif relationship_data.is_a?(Hash)
           # to-one relationship - replace
-          replace_to_one_relationship(resource, relationship_data)
+          unless relationship_is_to_many?
+            replace_to_one_relationship(resource, relationship_data)
+          else
+            raise JPie::Errors::BadRequestError.new(
+              detail: 'Invalid data type for to-many relationship'
+            )
+          end
         else
           raise JPie::Errors::BadRequestError.new(
             detail: 'Relationship data must be null, an object, or an array of objects'
@@ -109,32 +155,44 @@ module JPie
       end
 
       def add_to_relationship(resource, relationship_data)
-        unless relationship_data.is_a?(Array)
-          raise JPie::Errors::BadRequestError.new(
-            detail: 'Adding to relationships requires an array of resource identifier objects'
+        begin
+          related_objects = find_related_objects(relationship_data)
+          association = association_for_resource(resource)
+
+          related_objects.each do |related_object|
+            association << related_object unless association.include?(related_object)
+          end
+
+          resource.save!
+        rescue ActiveRecord::AssociationTypeMismatch => e
+          raise JPie::Errors::NotFoundError.new(
+            detail: "Related resource not found: Invalid resource type for relationship"
           )
-        end
-
-        related_objects = find_related_objects(relationship_data)
-        association = association_for_resource(resource)
-
-        related_objects.each do |related_object|
-          association << related_object unless association.include?(related_object)
+        rescue ActiveRecord::RecordInvalid => e
+          raise JPie::Errors::ValidationError.new(
+            detail: "Failed to add relationships: #{e.message}"
+          )
         end
       end
 
       def remove_from_relationship(resource, relationship_data)
-        unless relationship_data.is_a?(Array)
-          raise JPie::Errors::BadRequestError.new(
-            detail: 'Removing from relationships requires an array of resource identifier objects'
+        begin
+          related_objects = find_related_objects(relationship_data)
+          association = association_for_resource(resource)
+
+          related_objects.each do |related_object|
+            association.delete(related_object)
+          end
+
+          resource.save!
+        rescue ActiveRecord::AssociationTypeMismatch => e
+          raise JPie::Errors::NotFoundError.new(
+            detail: "Related resource not found: Invalid resource type for relationship"
           )
-        end
-
-        related_objects = find_related_objects(relationship_data)
-        association = association_for_resource(resource)
-
-        related_objects.each do |related_object|
-          association.delete(related_object)
+        rescue ActiveRecord::RecordInvalid => e
+          raise JPie::Errors::ValidationError.new(
+            detail: "Failed to remove relationships: #{e.message}"
+          )
         end
       end
 
@@ -142,20 +200,44 @@ module JPie
         association_name = association_name_for_relationship
         resource.send("#{association_name}=", nil)
         resource.save!
+      rescue ActiveRecord::RecordInvalid => e
+        raise JPie::Errors::ValidationError.new(
+          detail: "Failed to clear relationship: #{e.message}"
+        )
       end
 
       def replace_to_many_relationship(resource, relationship_data)
-        related_objects = find_related_objects(relationship_data)
-        association_name = association_name_for_relationship
-        resource.send("#{association_name}=", related_objects)
-        resource.save!
+        begin
+          related_objects = find_related_objects(relationship_data)
+          association_name = association_name_for_relationship
+          resource.send("#{association_name}=", related_objects)
+          resource.save!
+        rescue ActiveRecord::AssociationTypeMismatch => e
+          raise JPie::Errors::NotFoundError.new(
+            detail: "Related resource not found: Invalid resource type for relationship"
+          )
+        rescue ActiveRecord::RecordInvalid => e
+          raise JPie::Errors::ValidationError.new(
+            detail: "Failed to replace relationships: #{e.message}"
+          )
+        end
       end
 
       def replace_to_one_relationship(resource, relationship_data)
-        related_object = find_related_object(relationship_data)
-        association_name = association_name_for_relationship
-        resource.send("#{association_name}=", related_object)
-        resource.save!
+        begin
+          related_object = find_related_object(relationship_data)
+          association_name = association_name_for_relationship
+          resource.send("#{association_name}=", related_object)
+          resource.save!
+        rescue ActiveRecord::AssociationTypeMismatch => e
+          raise JPie::Errors::NotFoundError.new(
+            detail: "Related resource not found: Invalid resource type for relationship"
+          )
+        rescue ActiveRecord::RecordInvalid => e
+          raise JPie::Errors::ValidationError.new(
+            detail: "Failed to replace relationship: #{e.message}"
+          )
+        end
       end
 
       def find_related_objects(relationship_data)
@@ -170,6 +252,10 @@ module JPie
 
         related_model_class = infer_model_class_from_type(type)
         related_model_class.find(id)
+      rescue ActiveRecord::RecordNotFound
+        raise JPie::Errors::NotFoundError.new(
+          detail: "Related resource not found: #{type}##{id}"
+        )
       end
 
       def association_for_resource(resource)
@@ -198,7 +284,7 @@ module JPie
 
       def render_relationship_data(relationship_data)
         response_data = { data: relationship_data }
-        render json: response_data, status: :ok, content_type: 'application/vnd.api+json'
+        render json: response_data, content_type: 'application/vnd.api+json'
       end
     end
   end
