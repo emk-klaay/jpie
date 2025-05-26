@@ -407,4 +407,4 @@ RSpec.describe JPie::Controller::RelationshipActions do
       expect(controller.send(:infer_model_class_from_type, 'posts')).to eq(Post)
     end
   end
-end 
+end
