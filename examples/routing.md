@@ -70,7 +70,7 @@ GET    /posts                                # Index
 GET    /posts/:id                            # Show
 ```
 
-### Nested Configuration (`jpie_resources :categories do jpie_resources :articles end`)
+### Nested Configuration (`jpie_resources :categories { jpie_resources :articles }`)
 ```http
 # Category routes
 GET    /categories                           # Index
