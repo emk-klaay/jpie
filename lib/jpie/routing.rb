@@ -45,14 +45,14 @@ module JPie
       member do
         # Routes for fetching and updating relationships
         # Pattern: /resources/:id/relationships/:relationship_name
-        get 'relationships/*relationship_name', to: 'relationships#show', as: :relationship
-        patch 'relationships/*relationship_name', to: 'relationships#update'
-        post 'relationships/*relationship_name', to: 'relationships#create'
-        delete 'relationships/*relationship_name', to: 'relationships#destroy'
+        get 'relationships/*relationship_name', action: :show_relationship, as: :relationship
+        patch 'relationships/*relationship_name', action: :update_relationship
+        post 'relationships/*relationship_name', action: :create_relationship
+        delete 'relationships/*relationship_name', action: :destroy_relationship
 
         # Routes for fetching related resources
         # Pattern: /resources/:id/:relationship_name
-        get '*relationship_name', to: 'related#show', as: :related
+        get '*relationship_name', action: :show_related, as: :related
       end
     end
   end

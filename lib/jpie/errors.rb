@@ -55,6 +55,12 @@ module JPie
       end
     end
 
+    class UnsupportedMediaTypeError < Error
+      def initialize(detail: 'Unsupported Media Type')
+        super(status: 415, title: 'Unsupported Media Type', detail:)
+      end
+    end
+
     class InternalServerError < Error
       def initialize(detail: 'Internal Server Error')
         super(status: 500, title: 'Internal Server Error', detail:)
