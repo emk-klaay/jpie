@@ -29,6 +29,12 @@ module JPie
       end
     end
 
+    initializer 'jpie.routing' do
+      ActiveSupport.on_load(:action_dispatch) do
+        ActionDispatch::Routing::Mapper.include JPie::Routing
+      end
+    end
+
     generators do
       require 'jpie/generators/resource_generator'
     end

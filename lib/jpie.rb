@@ -11,6 +11,7 @@ module JPie
   autoload :Controller, 'jpie/controller'
   autoload :Configuration, 'jpie/configuration'
   autoload :Errors, 'jpie/errors'
+  autoload :Routing, 'jpie/routing'
 
   class << self
     def configuration
