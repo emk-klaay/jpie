@@ -31,22 +31,28 @@ bundle add jpie
 
 This project uses [Overcommit](https://github.com/sds/overcommit) to enforce code quality through Git hooks. After cloning the repository:
 
-### 1. Install Dependencies
+### Quick Setup (Recommended)
 
 ```bash
-bundle install
+# One command to set up everything
+./bin/setup-hooks
 ```
 
-### 2. Install Git Hooks
+### Manual Setup
+
+If you prefer to set up manually:
 
 ```bash
-# Install overcommit globally (one-time setup)
+# 1. Install dependencies
+bundle install
+
+# 2. Install overcommit globally (one-time setup)
 gem install overcommit
 
-# Install the Git hooks for this project
+# 3. Install the Git hooks for this project
 overcommit --install
 
-# Sign the configuration (required for security)
+# 4. Sign the configuration (required for security)
 overcommit --sign
 ```
 

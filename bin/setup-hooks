@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Setup script for JPie development environment
+# This script installs and configures Git hooks for code quality enforcement
+
+set -e
+
+echo "🚀 Setting up JPie development environment..."
+
+# Check if overcommit is installed globally
+if ! command -v overcommit &> /dev/null; then
+    echo "📦 Installing overcommit globally..."
+    gem install overcommit
+else
+    echo "✅ Overcommit already installed"
+fi
+
+# Install bundle dependencies
+echo "📦 Installing bundle dependencies..."
+bundle install
+
+# Install Git hooks
+echo "🔧 Installing Git hooks..."
+overcommit --install
+
+# Sign the configuration
+echo "🔐 Signing overcommit configuration..."
+overcommit --sign
+
+# Test the setup
+echo "🧪 Testing hook setup..."
+if overcommit --run pre-commit; then
+    echo "✅ Pre-commit hooks working correctly"
+else
+    echo "❌ Pre-commit hooks failed - please check your setup"
+    exit 1
+fi
+
+if overcommit --run pre-push; then
+    echo "✅ Pre-push hooks working correctly"
+else
+    echo "❌ Pre-push hooks failed - please check your setup"
+    exit 1
+fi
+
+echo ""
+echo "🎉 Development environment setup complete!"
+echo ""
+echo "The following quality checks will now run automatically:"
+echo "  • RuboCop (code style) - on every commit"
+echo "  • RSpec (tests) - on every push"
+echo "  • Trailing whitespace check - on every commit"
+echo "  • Merge conflict detection - on every commit"
+echo ""
+echo "You can run manual checks with:"
+echo "  bundle exec rubocop -A    # Fix code style issues"
+echo "  bundle exec rspec         # Run tests"
+echo "  overcommit --run pre-commit  # Test pre-commit hooks"
+echo "  overcommit --run pre-push    # Test pre-push hooks"
+echo ""
+echo "Happy coding! 🎯"
