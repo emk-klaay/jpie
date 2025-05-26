@@ -51,46 +51,46 @@ end
 ### Flat Configuration (`jpie_resources :articles`)
 ```http
 # Standard RESTful routes
-GET    /articles                             # Index
-POST   /articles                             # Create
-GET    /articles/:id                         # Show
-PATCH  /articles/:id                         # Update
-DELETE /articles/:id                         # Destroy
+GET    /articles                             # ArticlesController#index
+POST   /articles                             # ArticlesController#create
+GET    /articles/:id                         # ArticlesController#show
+PATCH  /articles/:id                         # ArticlesController#update
+DELETE /articles/:id                         # ArticlesController#destroy
 
 # JSON:API relationship routes
-GET    /articles/:id/relationships/author    # Get relationship linkage
-PATCH  /articles/:id/relationships/author    # Update relationship
-GET    /articles/:id/author                  # Get related author
+GET    /articles/:id/relationships/author    # ArticlesController#show_relationship
+PATCH  /articles/:id/relationships/author    # ArticlesController#update_relationship
+GET    /articles/:id/author                  # ArticlesController#show_related
 ```
 
 ### Limited Configuration (`jpie_resources :posts, only: %i[index show]`)
 ```http
 # Only specified routes (no relationship routes)
-GET    /posts                                # Index
-GET    /posts/:id                            # Show
+GET    /posts                                # PostsController#index
+GET    /posts/:id                            # PostsController#show
 ```
 
 ### Nested Configuration (`jpie_resources :categories { jpie_resources :articles }`)
 ```http
 # Category routes
-GET    /categories                           # Index
-POST   /categories                           # Create
-GET    /categories/:id                       # Show
-PATCH  /categories/:id                       # Update
-DELETE /categories/:id                       # Destroy
-GET    /categories/:id/relationships/articles
-PATCH  /categories/:id/relationships/articles
-GET    /categories/:id/articles
+GET    /categories                            # CategoriesController#index
+POST   /categories                            # CategoriesController#create
+GET    /categories/:id                        # CategoriesController#show
+PATCH  /categories/:id                        # CategoriesController#update
+DELETE /categories/:id                        # CategoriesController#destroy
+GET    /categories/:id/relationships/articles # CategoriesController#show_relationship
+PATCH  /categories/:id/relationships/articles # CategoriesController#update_relationship
+GET    /categories/:id/articles               # CategoriesController#show_related
 
 # Nested article routes
-GET    /categories/:category_id/articles     # Index
-POST   /categories/:category_id/articles     # Create
-GET    /categories/:category_id/articles/:id # Show
-PATCH  /categories/:category_id/articles/:id # Update
-DELETE /categories/:category_id/articles/:id # Destroy
-GET    /categories/:category_id/articles/:id/relationships/author
-PATCH  /categories/:category_id/articles/:id/relationships/author
-GET    /categories/:category_id/articles/:id/author
+GET    /categories/:category_id/articles                          # ArticlesController#index
+POST   /categories/:category_id/articles                          # ArticlesController#create
+GET    /categories/:category_id/articles/:id                      # ArticlesController#show
+PATCH  /categories/:category_id/articles/:id                      # ArticlesController#update
+DELETE /categories/:category_id/articles/:id                      # ArticlesController#destroy
+GET    /categories/:category_id/articles/:id/relationships/author # ArticlesController#show_relationship
+PATCH  /categories/:category_id/articles/:id/relationships/author # ArticlesController#update_relationship
+GET    /categories/:category_id/articles/:id/author               # ArticlesController#show_related
 ```
 
 ## HTTP Examples
