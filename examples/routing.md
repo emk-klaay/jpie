@@ -48,28 +48,49 @@ end
 
 ## Generated Routes
 
-The `jpie_resources` helper automatically creates JSON:API compliant routes:
-
-### Standard Resource Routes
+### Flat Configuration (`jpie_resources :articles`)
 ```http
-GET    /articles           # Index - list all articles
-POST   /articles           # Create - create new article  
-GET    /articles/:id       # Show - get specific article
-PATCH  /articles/:id       # Update - update specific article
-DELETE /articles/:id       # Destroy - delete specific article
-```
+# Standard RESTful routes
+GET    /articles                             # Index
+POST   /articles                             # Create
+GET    /articles/:id                         # Show
+PATCH  /articles/:id                         # Update
+DELETE /articles/:id                         # Destroy
 
-### JSON:API Relationship Routes
-```http
-# Relationship management (JSON:API spec compliant)
+# JSON:API relationship routes
 GET    /articles/:id/relationships/author    # Get relationship linkage
 PATCH  /articles/:id/relationships/author    # Update relationship
-POST   /articles/:id/relationships/comments  # Add to relationship
-DELETE /articles/:id/relationships/comments  # Remove from relationship
-
-# Related resource access
 GET    /articles/:id/author                  # Get related author
-GET    /articles/:id/comments                # Get related comments
+```
+
+### Limited Configuration (`jpie_resources :posts, only: %i[index show]`)
+```http
+# Only specified routes (no relationship routes)
+GET    /posts                                # Index
+GET    /posts/:id                            # Show
+```
+
+### Nested Configuration (`jpie_resources :categories do jpie_resources :articles end`)
+```http
+# Category routes
+GET    /categories                           # Index
+POST   /categories                           # Create
+GET    /categories/:id                       # Show
+PATCH  /categories/:id                       # Update
+DELETE /categories/:id                       # Destroy
+GET    /categories/:id/relationships/articles
+PATCH  /categories/:id/relationships/articles
+GET    /categories/:id/articles
+
+# Nested article routes
+GET    /categories/:category_id/articles     # Index
+POST   /categories/:category_id/articles     # Create
+GET    /categories/:category_id/articles/:id # Show
+PATCH  /categories/:category_id/articles/:id # Update
+DELETE /categories/:category_id/articles/:id # Destroy
+GET    /categories/:category_id/articles/:id/relationships/author
+PATCH  /categories/:category_id/articles/:id/relationships/author
+GET    /categories/:category_id/articles/:id/author
 ```
 
 ## HTTP Examples
