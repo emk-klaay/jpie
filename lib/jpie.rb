@@ -6,9 +6,6 @@ require 'jpie/version'
 require_relative 'jpie/resource'
 require_relative 'jpie/errors'
 
-# Load RSpec support if RSpec is defined
-require_relative 'jpie/rspec' if defined?(RSpec)
-
 module JPie
   autoload :Serializer, 'jpie/serializer'
   autoload :Deserializer, 'jpie/deserializer'
