@@ -7,7 +7,7 @@ alwaysApply: false
 
 ## Ruby Style
 - Follow Ruby style guide and RuboCop rules defined in .rubocop.yml
-- Prefer rubocop autocorrect 
+- Prefer rubocop autocorrect
 - Always pass rubocop before committing to git
 - Use `{data:}` rather than `{data: data}`
 - Only use code comments when absolutely necessary
