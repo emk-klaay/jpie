@@ -4,7 +4,6 @@ require 'active_support'
 require 'active_support/core_ext'
 require 'jpie/version'
 require_relative 'jpie/resource'
-require_relative 'jpie/client'
 require_relative 'jpie/errors'
 
 # Load RSpec support if RSpec is defined
